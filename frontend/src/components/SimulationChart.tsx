@@ -90,7 +90,7 @@ export default function SimulationChart() {
               <XAxis dataKey="year" unit="yr" type="number" domain={[0, horizonYears]} tickCount={horizonYears + 1} />
               <YAxis tickFormatter={(v) => `${((v - 1) * 100).toFixed(0)}%`} />
               <Tooltip
-                formatter={(v: number, name: string) => [FMT(v), name]}
+                formatter={(v, name) => [typeof v === "number" ? FMT(v) : v, name]}
                 labelFormatter={(l) => `Year ${l}`}
               />
               <Legend />

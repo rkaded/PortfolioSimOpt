@@ -13,7 +13,7 @@ export default function OptimizerPanel() {
   const {
     assets, constraints, targetReturn, benchmarkTicker, lookbackYears,
     setTargetReturn, setBenchmarkTicker, setLookbackYears,
-    optimizeResult, setOptimizeResult, setLoading,
+    optimizeResult, setOptimizeResult,
   } = usePortfolioStore();
 
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export default function OptimizerPanel() {
                   <YAxis dataKey="y" name="Return" unit="%" type="number">
                     <Label value="Expected Return (%)" angle={-90} position="insideLeft" offset={10} fill="#888" />
                   </YAxis>
-                  <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v: number) => `${v.toFixed(2)}%`} />
+                  <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v) => typeof v === "number" ? `${v.toFixed(2)}%` : v} />
                   <Scatter
                     data={frontier.map((p) => ({ x: p.volatility * 100, y: p.expected_return * 100 }))}
                     fill="#4f8ef7"

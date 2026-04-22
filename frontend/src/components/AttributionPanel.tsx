@@ -3,7 +3,7 @@ import { usePortfolioStore } from "../store/portfolio";
 import { fetchAttribution, exportAttributionCsv } from "../api/client";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, Legend
+  ResponsiveContainer, Legend
 } from "recharts";
 
 const COLORS = ["#4f8ef7", "#4caf50", "#f7c94f", "#f7794f", "#a78bfa", "#fb7185", "#34d399", "#f59e0b"];
@@ -105,7 +105,7 @@ export default function AttributionPanel() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} />
                 <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
-                <Tooltip formatter={(v: number) => `${v.toFixed(3)}%`} />
+                <Tooltip formatter={(v) => typeof v === "number" ? `${v.toFixed(3)}%` : v} />
                 <Legend />
                 {tickers.map((t, i) => (
                   <Bar key={t} dataKey={t} stackId="a" fill={COLORS[i % COLORS.length]} />

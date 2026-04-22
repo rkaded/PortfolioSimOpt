@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePortfolioStore } from "../store/portfolio";
-import type { Constraints, LockedPosition, SectorCap, AssetBound } from "../api/client";
+import type { Constraints } from "../api/client";
 
 export default function ConstraintPanel() {
   const { assets, constraints, setConstraints } = usePortfolioStore();
