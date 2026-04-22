@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { usePortfolioStore } from "../store/portfolio";
 import { fetchAssets } from "../api/client";
 
@@ -127,8 +127,8 @@ export default function AssetPanel() {
           </thead>
           <tbody>
             {assets.map((a) => (
-              <>
-                <tr key={a.ticker}>
+              <React.Fragment key={a.ticker}>
+                <tr>
                   <td className="ticker-cell">{a.ticker}</td>
                   <td>
                     <input
@@ -159,7 +159,7 @@ export default function AssetPanel() {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
