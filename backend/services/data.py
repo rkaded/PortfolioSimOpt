@@ -28,7 +28,6 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
             params = {
                 "startDate": start.strftime("%Y-%m-%d"),
                 "endDate": end.strftime("%Y-%m-%d"),
-                "resampleFreq": "daily",
                 "token": TIINGO_API_KEY,
             }
             with httpx.Client(timeout=15) as client:
