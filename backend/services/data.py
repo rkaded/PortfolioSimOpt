@@ -1,9 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import requests
+import time
 from datetime import datetime, timedelta
-from functools import lru_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,42 +24,22 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
 
     tickers_list = [tickers] if isinstance(tickers, str) else list(tickers)
 
-    session = requests.Session()
-    session.headers["User-Agent"] = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    )
-
-    raw = yf.download(
-        tickers_list,
-        start=start.strftime("%Y-%m-%d"),
-        end=end.strftime("%Y-%m-%d"),
-        auto_adjust=True,
-        progress=False,
-        threads=True,
-        group_by="ticker",
-        session=session,
-    )
-
-    # Normalize to a simple {ticker: close_series} DataFrame regardless of yfinance version
     frames = {}
     for t in tickers_list:
-        try:
-            if isinstance(raw.columns, pd.MultiIndex):
-                # multi-ticker: columns are (ticker, field) or (field, ticker)
-                if t in raw.columns.get_level_values(0):
-                    col = raw[t]["Close"] if "Close" in raw[t].columns else raw[t].iloc[:, 0]
-                elif t in raw.columns.get_level_values(1):
-                    col = raw.xs(t, axis=1, level=1)["Close"]
-                else:
-                    continue
-            else:
-                # single-ticker: flat columns
-                col = raw["Close"] if "Close" in raw.columns else raw.iloc[:, 0]
-            frames[t] = col
-        except Exception:
-            continue
+        for attempt in range(3):
+            try:
+                hist = yf.Ticker(t).history(
+                    start=start.strftime("%Y-%m-%d"),
+                    end=end.strftime("%Y-%m-%d"),
+                    auto_adjust=True,
+                )
+                if not hist.empty and "Close" in hist.columns:
+                    frames[t] = hist["Close"]
+                break
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed for {t}: {e}")
+                if attempt < 2:
+                    time.sleep(1)
 
     if not frames:
         return pd.DataFrame(), {t: ["No data returned."] for t in tickers_list}
