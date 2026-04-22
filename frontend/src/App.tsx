@@ -12,7 +12,7 @@ type Tab = "assets" | "constraints" | "optimizer" | "simulation" | "correlation"
 const TABS: { id: Tab; label: string }[] = [
   { id: "assets", label: "Assets" },
   { id: "constraints", label: "Constraints" },
-  { id: "optimizer", label: "Optimizer" },
+  { id: "optimizer", label: "Optimiser" },
   { id: "simulation", label: "Simulation" },
   { id: "correlation", label: "Correlation" },
   { id: "attribution", label: "Attribution" },

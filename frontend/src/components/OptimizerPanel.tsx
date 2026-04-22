@@ -9,7 +9,7 @@ import {
 const FMT_PCT = (v: number | null | undefined) =>
   v == null ? "—" : `${(v * 100).toFixed(2)}%`;
 
-export default function OptimizerPanel() {
+export default function OptimiserPanel() {
   const {
     assets, constraints, targetReturn, benchmarkTicker, lookbackYears,
     setTargetReturn, setBenchmarkTicker, setLookbackYears,
@@ -40,7 +40,7 @@ export default function OptimizerPanel() {
       );
       setOptimizeResult(result);
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? "Optimization failed.");
+      setError(e?.response?.data?.detail ?? "Optimisation failed.");
     } finally {
       setRunning(false);
     }
@@ -54,7 +54,7 @@ export default function OptimizerPanel() {
 
   return (
     <div className="panel">
-      <div className="panel-header"><h2>Optimizer</h2></div>
+      <div className="panel-header"><h2>Optimiser</h2></div>
 
       <div className="opt-controls">
         <label>
@@ -72,7 +72,7 @@ export default function OptimizerPanel() {
           </select>
         </label>
         <button className="btn-primary" onClick={runOpt} disabled={running || assets.length < 2}>
-          {running ? "Optimizing…" : "Run Optimizer"}
+          {running ? "Optimising…" : "Run Optimiser"}
         </button>
       </div>
 
@@ -80,7 +80,7 @@ export default function OptimizerPanel() {
 
       {isInfeasible && (
         <div className="infeasible-box">
-          <strong>Optimizer Infeasible</strong>
+          <strong>Optimiser Infeasible</strong>
           <p>{optimizeResult!.message}</p>
           <p className="binding">
             Binding constraint: <code>{optimizeResult!.binding_constraint}</code>

@@ -16,7 +16,7 @@ def compute_return_attribution(
     w = np.array([weights[t] for t in tickers])
 
     p = prices[tickers].dropna()
-    periodic = p.resample(period).last().pct_change().dropna()
+    periodic = p.resample("ME").last().pct_change().dropna()
 
     contributions = periodic.multiply(w, axis=1)
     portfolio_return = contributions.sum(axis=1)

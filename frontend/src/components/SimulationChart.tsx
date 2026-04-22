@@ -23,7 +23,7 @@ export default function SimulationChart() {
   const weights = optimizeResult?.status === "ok" ? optimizeResult.weights! : null;
 
   async function simulate() {
-    if (!weights) { setError("Run optimizer first."); return; }
+    if (!weights) { setError("Run optimiser first."); return; }
     setRunning(true); setError(null);
     try {
       const result = await runSimulation(

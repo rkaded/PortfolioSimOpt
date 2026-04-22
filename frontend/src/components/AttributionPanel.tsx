@@ -17,7 +17,7 @@ export default function AttributionPanel() {
   const weights = optimizeResult?.status === "ok" ? optimizeResult.weights! : null;
 
   async function load() {
-    if (!weights) { setError("Run optimizer first to get weights."); return; }
+    if (!weights) { setError("Run optimiser first to get weights."); return; }
     setLoading(true); setError(null);
     try {
       const result = await fetchAttribution(assets.map((a) => a.ticker), weights, lookbackYears);

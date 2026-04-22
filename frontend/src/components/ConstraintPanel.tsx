@@ -79,7 +79,7 @@ export default function ConstraintPanel() {
       {/* Locked Positions */}
       <section className="constraint-section">
         <h3>Locked Positions</h3>
-        <p className="constraint-hint">Fixed-weight assets removed from optimization.</p>
+        <p className="constraint-hint">Fixed-weight assets removed from optimisation.</p>
         <div className="constraint-row">
           <input placeholder="Ticker" value={newLockedTicker} onChange={(e) => setNewLockedTicker(e.target.value.toUpperCase())} className="small-input" />
           <input placeholder="Weight %" type="number" min="0" max="100" value={newLockedWeight} onChange={(e) => setNewLockedWeight(e.target.value)} className="small-input" />
