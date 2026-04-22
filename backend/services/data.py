@@ -1,5 +1,6 @@
 import os
 import time
+from io import StringIO
 import httpx
 import pandas as pd
 import numpy as np
@@ -12,23 +13,68 @@ TIINGO_API_KEY = os.environ.get("TIINGO_API_KEY", "")
 TIINGO_BASE = "https://api.tiingo.com/tiingo/daily"
 
 # In-memory price cache: {(ticker, start_date, end_date): (fetched_at, pd.Series)}
-# Reusing cached data across all endpoints prevents redundant Tiingo API calls
-# and avoids rate-limit (429) errors when multiple endpoints are hit in quick succession.
+# Shared across all endpoints — prevents redundant API calls within the same session.
 _PRICE_CACHE: dict[tuple, tuple[float, pd.Series]] = {}
-CACHE_TTL = 300  # seconds — prices are stale after 5 minutes
+CACHE_TTL = 300  # 5 minutes
+
+CRISIS_WINDOWS = [
+    ("2020-02-01", "2020-06-30", "2020 COVID drawdown"),
+]
 
 
-def _fetch_single_ticker(ticker: str, start: str, end: str) -> pd.Series | None:
-    """Fetch one ticker from Tiingo, with a 5-minute in-memory cache."""
-    cache_key = (ticker, start, end)
-    now = time.monotonic()
+# ---------------------------------------------------------------------------
+# Data sources — Stooq (primary, free, no key) → Tiingo (fallback)
+# ---------------------------------------------------------------------------
 
-    if cache_key in _PRICE_CACHE:
-        fetched_at, series = _PRICE_CACHE[cache_key]
-        if now - fetched_at < CACHE_TTL:
-            logger.debug(f"Cache hit for {ticker}")
-            return series
+def _fetch_stooq(ticker: str, start: str, end: str) -> pd.Series | None:
+    """
+    Fetch daily close prices from Stooq — completely free, no API key, no rate limits.
+    US equities use the '<ticker>.US' symbol (e.g. 'AAPL.US').
+    Returns None if the ticker is not found or the request fails.
+    """
+    stooq_ticker = ticker.lower()
+    if "." not in stooq_ticker:
+        stooq_ticker += ".us"
 
+    # Stooq date format: YYYYMMDD
+    start_fmt = start.replace("-", "")
+    end_fmt = end.replace("-", "")
+
+    url = (
+        f"https://stooq.com/q/d/l/"
+        f"?s={stooq_ticker}&d1={start_fmt}&d2={end_fmt}&i=d"
+    )
+
+    try:
+        with httpx.Client(timeout=15) as client:
+            resp = client.get(url)
+        if resp.status_code != 200:
+            logger.warning(f"Stooq {ticker}: HTTP {resp.status_code}")
+            return None
+
+        text = resp.text.strip()
+        # Stooq returns "No data" or an empty body for unknown tickers
+        if not text or "No data" in text or len(text.splitlines()) < 2:
+            logger.warning(f"Stooq {ticker}: no data in response")
+            return None
+
+        df = pd.read_csv(StringIO(text), parse_dates=["Date"])
+        df = df.set_index("Date").sort_index()
+
+        if "Close" not in df.columns:
+            return None
+
+        return df["Close"].rename(ticker)
+
+    except Exception as e:
+        logger.warning(f"Stooq fetch failed for {ticker}: {e}")
+        return None
+
+
+def _fetch_tiingo(ticker: str, start: str, end: str) -> pd.Series | None:
+    """Fallback: fetch from Tiingo (requires API key, 50 req/hour free limit)."""
+    if not TIINGO_API_KEY:
+        return None
     try:
         url = f"{TIINGO_BASE}/{ticker}/prices"
         params = {"startDate": start, "endDate": end, "token": TIINGO_API_KEY}
@@ -41,20 +87,46 @@ def _fetch_single_ticker(ticker: str, start: str, end: str) -> pd.Series | None:
                 df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
                 df = df.set_index("date").sort_index()
                 col = "adjClose" if "adjClose" in df.columns else "close"
-                series = df[col]
-                _PRICE_CACHE[cache_key] = (now, series)
-                return series
+                return df[col].rename(ticker)
         else:
             logger.warning(f"Tiingo {ticker}: HTTP {resp.status_code}")
     except Exception as e:
         logger.warning(f"Tiingo fetch failed for {ticker}: {e}")
-
     return None
 
-CRISIS_WINDOWS = [
-    ("2020-02-01", "2020-06-30", "2020 COVID drawdown"),
-]
 
+def _fetch_single_ticker(ticker: str, start: str, end: str) -> pd.Series | None:
+    """
+    Fetch price series for one ticker, checking the in-memory cache first.
+    Source priority: cache → Stooq → Tiingo (fallback).
+    """
+    cache_key = (ticker, start, end)
+    now = time.monotonic()
+
+    # Cache hit
+    if cache_key in _PRICE_CACHE:
+        fetched_at, series = _PRICE_CACHE[cache_key]
+        if now - fetched_at < CACHE_TTL:
+            logger.debug(f"Cache hit: {ticker}")
+            return series
+
+    # Try Stooq first (free, unlimited)
+    series = _fetch_stooq(ticker, start, end)
+
+    # Fall back to Tiingo if Stooq fails
+    if series is None:
+        logger.info(f"Stooq failed for {ticker}, falling back to Tiingo")
+        series = _fetch_tiingo(ticker, start, end)
+
+    if series is not None:
+        _PRICE_CACHE[cache_key] = (now, series)
+
+    return series
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFrame, dict]:
     end = datetime.today()
@@ -89,7 +161,8 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
 
         if len(col) < min_required_days:
             warnings[ticker].append(
-                f"Only {len(col)} trading days available (< {int(min_required_days)} required for {lookback_years}yr lookback)."
+                f"Only {len(col)} trading days available "
+                f"(< {int(min_required_days)} required for {lookback_years}yr lookback)."
             )
 
         if actual_start > required_start + timedelta(days=60):
@@ -146,8 +219,8 @@ def compute_historical_stats(prices: pd.DataFrame) -> dict:
 
 def validate_expected_return(ticker: str, expected_return_pct: float, stats: dict) -> str | None:
     """
-    Returns a warning string if expected_return is > 2 SD from historical distribution, else None.
-    expected_return_pct: e.g. 8.0 for 8%
+    Returns a warning string if expected_return is > 2 SD from historical,
+    or None if within normal range.
     """
     s = stats.get(ticker)
     if s is None or s.get("std_5yr") is None or s.get("return_5yr") is None:
