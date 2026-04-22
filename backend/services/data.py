@@ -1,6 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import requests
 from datetime import datetime, timedelta
 from functools import lru_cache
 import logging
@@ -24,6 +25,13 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
 
     tickers_list = [tickers] if isinstance(tickers, str) else list(tickers)
 
+    session = requests.Session()
+    session.headers["User-Agent"] = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    )
+
     raw = yf.download(
         tickers_list,
         start=start.strftime("%Y-%m-%d"),
@@ -32,6 +40,7 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
         progress=False,
         threads=True,
         group_by="ticker",
+        session=session,
     )
 
     # Normalize to a simple {ticker: close_series} DataFrame regardless of yfinance version
