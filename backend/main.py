@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import assets, optimizer, simulation, attribution
 
-app = FastAPI(title="Portfolio Intelligence Tool", version="1.0.0")
+app = FastAPI(title="Folio", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

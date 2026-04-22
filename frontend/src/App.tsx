@@ -25,7 +25,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-left">
-          <span className="logo">Portfolio Intelligence</span>
+          <span className="logo">Folio</span>
           <span className="version">v1.0 · Private Banking</span>
         </div>
         <div className="not-advice-banner">

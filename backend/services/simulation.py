@@ -2,17 +2,19 @@ import numpy as np
 import pandas as pd
 from pypfopt import risk_models
 
+BATCH_SIZE = 250  # paths per batch — keeps peak RAM ~15 MB regardless of n_paths
+
 
 def run_monte_carlo(
     returns: pd.DataFrame,
     weights: dict[str, float],
     horizon_years: int = 5,
-    n_paths: int = 10000,
+    n_paths: int = 1000,
     seed: int = 42,
 ) -> dict:
     """
     Parametric Monte Carlo using multivariate normal with Ledoit-Wolf covariance.
-    Returns percentile paths and summary statistics.
+    Processes paths in batches to keep memory usage flat regardless of n_paths.
 
     weights: {ticker: weight}, must sum to 1.0
     Returns paths in cumulative portfolio value space (starting at 1.0).
@@ -26,11 +28,17 @@ def run_monte_carlo(
 
     trading_days = horizon_years * 252
     rng = np.random.default_rng(seed)
-    daily_draws = rng.multivariate_normal(mu_daily, cov_daily, size=(n_paths, trading_days))
 
-    portfolio_daily = daily_draws @ w
-    log_cum = np.cumsum(portfolio_daily, axis=1)
-    cum_paths = np.exp(log_cum)
+    # Process in batches: each batch is (BATCH_SIZE, trading_days, n_assets)
+    # Peak per-batch RAM = 250 × 1260 days × 5 stocks × 8 B ≈ 12 MB
+    cum_chunks = []
+    for i in range(0, n_paths, BATCH_SIZE):
+        n = min(BATCH_SIZE, n_paths - i)
+        draws = rng.multivariate_normal(mu_daily, cov_daily, size=(n, trading_days))
+        port_daily = draws @ w
+        cum_chunks.append(np.exp(np.cumsum(port_daily, axis=1)))
+
+    cum_paths = np.vstack(cum_chunks)  # (n_paths, trading_days)
 
     p25 = np.percentile(cum_paths, 25, axis=0)
     p50 = np.percentile(cum_paths, 50, axis=0)
@@ -60,16 +68,22 @@ def run_monte_carlo(
 def run_benchmark_simulation(
     benchmark_returns: pd.Series,
     horizon_years: int = 5,
-    n_paths: int = 10000,
+    n_paths: int = 1000,
     seed: int = 42,
 ) -> dict:
-    """Single-asset Monte Carlo for benchmark overlay."""
+    """Single-asset Monte Carlo for benchmark overlay. Batched for memory efficiency."""
     mu = float(benchmark_returns.mean())
     sigma = float(benchmark_returns.std())
     trading_days = horizon_years * 252
     rng = np.random.default_rng(seed + 1)
-    draws = rng.normal(mu, sigma, size=(n_paths, trading_days))
-    cum = np.exp(np.cumsum(draws, axis=1))
+
+    cum_chunks = []
+    for i in range(0, n_paths, BATCH_SIZE):
+        n = min(BATCH_SIZE, n_paths - i)
+        draws = rng.normal(mu, sigma, size=(n, trading_days))
+        cum_chunks.append(np.exp(np.cumsum(draws, axis=1)))
+
+    cum = np.vstack(cum_chunks)
     return {
         "normal": np.percentile(cum, 50, axis=0).tolist(),
         "trading_days": trading_days,

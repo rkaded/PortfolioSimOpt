@@ -45,7 +45,7 @@ class SimulationRequest(BaseModel):
     horizon_years: int = Field(default=5, ge=1, le=30)
     lookback_years: int = Field(default=5, ge=1, le=20)
     benchmark_ticker: str = Field(default="SPY")
-    n_paths: int = Field(default=10000, ge=1000, le=50000)
+    n_paths: int = Field(default=1000, ge=100, le=2000)
     seed: int = Field(default=42)
 
 
