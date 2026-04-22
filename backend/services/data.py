@@ -1,4 +1,5 @@
 import os
+import time
 import httpx
 import pandas as pd
 import numpy as np
@@ -10,6 +11,46 @@ logger = logging.getLogger(__name__)
 TIINGO_API_KEY = os.environ.get("TIINGO_API_KEY", "")
 TIINGO_BASE = "https://api.tiingo.com/tiingo/daily"
 
+# In-memory price cache: {(ticker, start_date, end_date): (fetched_at, pd.Series)}
+# Reusing cached data across all endpoints prevents redundant Tiingo API calls
+# and avoids rate-limit (429) errors when multiple endpoints are hit in quick succession.
+_PRICE_CACHE: dict[tuple, tuple[float, pd.Series]] = {}
+CACHE_TTL = 300  # seconds — prices are stale after 5 minutes
+
+
+def _fetch_single_ticker(ticker: str, start: str, end: str) -> pd.Series | None:
+    """Fetch one ticker from Tiingo, with a 5-minute in-memory cache."""
+    cache_key = (ticker, start, end)
+    now = time.monotonic()
+
+    if cache_key in _PRICE_CACHE:
+        fetched_at, series = _PRICE_CACHE[cache_key]
+        if now - fetched_at < CACHE_TTL:
+            logger.debug(f"Cache hit for {ticker}")
+            return series
+
+    try:
+        url = f"{TIINGO_BASE}/{ticker}/prices"
+        params = {"startDate": start, "endDate": end, "token": TIINGO_API_KEY}
+        with httpx.Client(timeout=15) as client:
+            resp = client.get(url, params=params)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data:
+                df = pd.DataFrame(data)
+                df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
+                df = df.set_index("date").sort_index()
+                col = "adjClose" if "adjClose" in df.columns else "close"
+                series = df[col]
+                _PRICE_CACHE[cache_key] = (now, series)
+                return series
+        else:
+            logger.warning(f"Tiingo {ticker}: HTTP {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Tiingo fetch failed for {ticker}: {e}")
+
+    return None
+
 CRISIS_WINDOWS = [
     ("2020-02-01", "2020-06-30", "2020 COVID drawdown"),
 ]
@@ -20,30 +61,14 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
     start = end - timedelta(days=lookback_years * 365 + 30)
 
     tickers_list = [tickers] if isinstance(tickers, str) else list(tickers)
+    start_str = start.strftime("%Y-%m-%d")
+    end_str = end.strftime("%Y-%m-%d")
 
     frames = {}
     for t in tickers_list:
-        try:
-            url = f"{TIINGO_BASE}/{t}/prices"
-            params = {
-                "startDate": start.strftime("%Y-%m-%d"),
-                "endDate": end.strftime("%Y-%m-%d"),
-                "token": TIINGO_API_KEY,
-            }
-            with httpx.Client(timeout=15) as client:
-                resp = client.get(url, params=params)
-            if resp.status_code == 200:
-                data = resp.json()
-                if data:
-                    df = pd.DataFrame(data)
-                    df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
-                    df = df.set_index("date").sort_index()
-                    col = "adjClose" if "adjClose" in df.columns else "close"
-                    frames[t] = df[col]
-            else:
-                logger.warning(f"Tiingo {t}: HTTP {resp.status_code}")
-        except Exception as e:
-            logger.warning(f"Tiingo fetch failed for {t}: {e}")
+        series = _fetch_single_ticker(t, start_str, end_str)
+        if series is not None:
+            frames[t] = series
 
     if not frames:
         return pd.DataFrame(), {t: ["No data returned."] for t in tickers_list}
