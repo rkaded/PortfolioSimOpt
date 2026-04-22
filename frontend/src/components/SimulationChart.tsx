@@ -24,7 +24,7 @@ export default function SimulationChart() {
 
   async function simulate() {
     if (!weights) { setError("Run optimiser first."); return; }
-    setRunning(true); setError(null);
+    setRunning(true); setError(null); setSimulationResult(null);
     try {
       const result = await runSimulation(
         assets.map((a) => ({ ticker: a.ticker, expected_return: parseFloat(a.expectedReturn) })),

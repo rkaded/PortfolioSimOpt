@@ -29,7 +29,7 @@ export default function OptimiserPanel() {
     const tr = parseFloat(targetReturn) / 100;
     if (isNaN(tr)) { setError("Invalid target return."); return; }
 
-    setRunning(true); setError(null);
+    setRunning(true); setError(null); setOptimizeResult(null);
     try {
       const result = await runOptimize(
         assets.map((a) => ({ ticker: a.ticker, expected_return: parseFloat(a.expectedReturn) })),
