@@ -68,7 +68,7 @@ export default function OptimiserPanel() {
         <label>
           Lookback (years)
           <select value={lookbackYears} onChange={(e) => setLookbackYears(Number(e.target.value))}>
-            {[1, 2, 3, 5, 7, 10].map((y) => <option key={y} value={y}>{y}yr</option>)}
+            {[1, 2, 3, 5].map((y) => <option key={y} value={y}>{y}yr</option>)}
           </select>
         </label>
         <button className="btn-primary" onClick={runOpt} disabled={running || assets.length < 2}>

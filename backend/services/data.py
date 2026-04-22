@@ -1,24 +1,21 @@
-import yfinance as yf
+import os
+import httpx
 import pandas as pd
 import numpy as np
-import time
 from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
 
+TIINGO_API_KEY = os.environ.get("TIINGO_API_KEY", "")
+TIINGO_BASE = "https://api.tiingo.com/tiingo/daily"
+
 CRISIS_WINDOWS = [
-    ("2008-09-01", "2009-06-30", "2008-09 financial crisis"),
     ("2020-02-01", "2020-06-30", "2020 COVID drawdown"),
 ]
 
 
 def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFrame, dict]:
-    """
-    Fetch adjusted close prices for tickers. Returns (prices_df, warnings_dict).
-    prices_df: daily adjusted closes, columns = tickers
-    warnings_dict: {ticker: [warning strings]}
-    """
     end = datetime.today()
     start = end - timedelta(days=lookback_years * 365 + 30)
 
@@ -26,20 +23,28 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
 
     frames = {}
     for t in tickers_list:
-        for attempt in range(3):
-            try:
-                hist = yf.Ticker(t).history(
-                    start=start.strftime("%Y-%m-%d"),
-                    end=end.strftime("%Y-%m-%d"),
-                    auto_adjust=True,
-                )
-                if not hist.empty and "Close" in hist.columns:
-                    frames[t] = hist["Close"]
-                break
-            except Exception as e:
-                logger.warning(f"Attempt {attempt + 1} failed for {t}: {e}")
-                if attempt < 2:
-                    time.sleep(1)
+        try:
+            url = f"{TIINGO_BASE}/{t}/prices"
+            params = {
+                "startDate": start.strftime("%Y-%m-%d"),
+                "endDate": end.strftime("%Y-%m-%d"),
+                "resampleFreq": "daily",
+                "token": TIINGO_API_KEY,
+            }
+            with httpx.Client(timeout=15) as client:
+                resp = client.get(url, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data:
+                    df = pd.DataFrame(data)
+                    df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
+                    df = df.set_index("date").sort_index()
+                    col = "adjClose" if "adjClose" in df.columns else "close"
+                    frames[t] = df[col]
+            else:
+                logger.warning(f"Tiingo {t}: HTTP {resp.status_code}")
+        except Exception as e:
+            logger.warning(f"Tiingo fetch failed for {t}: {e}")
 
     if not frames:
         return pd.DataFrame(), {t: ["No data returned."] for t in tickers_list}

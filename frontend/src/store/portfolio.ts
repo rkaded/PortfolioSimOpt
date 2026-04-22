@@ -49,7 +49,7 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   },
   targetReturn: "7",
   benchmarkTicker: "SPY",
-  lookbackYears: 10,
+  lookbackYears: 5,
   horizonYears: 5,
   dataLastUpdated: null,
   loading: false,
