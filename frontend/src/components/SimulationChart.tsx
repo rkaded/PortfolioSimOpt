@@ -86,7 +86,7 @@ export default function SimulationChart() {
 
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="year" unit="yr" type="number" domain={[0, horizonYears]} tickCount={horizonYears + 1} />
               <YAxis tickFormatter={(v) => `${((v - 1) * 100).toFixed(0)}%`} />
               <Tooltip
@@ -94,12 +94,12 @@ export default function SimulationChart() {
                 labelFormatter={(l) => `Year ${l}`}
               />
               <Legend />
-              <ReferenceLine y={1} stroke="#555" strokeDasharray="4 2" />
-              <Line type="monotone" dataKey="bullish" stroke="#4caf50" dot={false} name="Bullish (75th pct)" strokeWidth={2} />
-              <Line type="monotone" dataKey="normal" stroke="#4f8ef7" dot={false} name="Normal (50th pct)" strokeWidth={2} />
-              <Line type="monotone" dataKey="bearish" stroke="#f7794f" dot={false} name="Bearish (25th pct)" strokeWidth={2} />
+              <ReferenceLine y={1} stroke="#cbd5e1" strokeDasharray="4 2" />
+              <Line type="monotone" dataKey="bullish" stroke="#16a34a" dot={false} name="Bullish (75th pct)" strokeWidth={2} />
+              <Line type="monotone" dataKey="normal"  stroke="#2563eb" dot={false} name="Normal (50th pct)"  strokeWidth={2} />
+              <Line type="monotone" dataKey="bearish" stroke="#dc2626" dot={false} name="Bearish (25th pct)" strokeWidth={2} />
               {sim.benchmark_path && (
-                <Line type="monotone" dataKey="benchmark" stroke="#aaa" dot={false} strokeDasharray="5 3" name={`${benchmarkTicker} (median)`} strokeWidth={1.5} />
+                <Line type="monotone" dataKey="benchmark" stroke="#94a3b8" dot={false} strokeDasharray="5 3" name={`${benchmarkTicker} (median)`} strokeWidth={1.5} />
               )}
             </LineChart>
           </ResponsiveContainer>

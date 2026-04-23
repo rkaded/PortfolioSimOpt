@@ -26,7 +26,6 @@ export default function App() {
       <header className="app-header">
         <div className="header-left">
           <span className="logo">Folio</span>
-          <span className="version">v1.0 · Private Banking</span>
         </div>
         <div className="not-advice-banner">
           Quantitative analysis only — not investment advice.

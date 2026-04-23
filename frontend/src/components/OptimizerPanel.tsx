@@ -120,17 +120,17 @@ export default function OptimiserPanel() {
               <h3>Efficient Frontier</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="x" name="Volatility" unit="%" type="number" domain={["auto", "auto"]}>
-                    <Label value="Volatility (%)" position="insideBottom" offset={-15} fill="#888" />
+                    <Label value="Volatility (%)" position="insideBottom" offset={-15} fill="#64748b" />
                   </XAxis>
                   <YAxis dataKey="y" name="Return" unit="%" type="number">
-                    <Label value="Expected Return (%)" angle={-90} position="insideLeft" offset={10} fill="#888" />
+                    <Label value="Expected Return (%)" angle={-90} position="insideLeft" offset={10} fill="#64748b" />
                   </YAxis>
                   <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v) => typeof v === "number" ? `${v.toFixed(2)}%` : v} />
                   <Scatter
                     data={frontier.map((p) => ({ x: p.volatility * 100, y: p.expected_return * 100 }))}
-                    fill="#4f8ef7"
+                    fill="#2563eb"
                     opacity={0.7}
                   />
                   {currentPoint && (
@@ -138,10 +138,10 @@ export default function OptimiserPanel() {
                       x={currentPoint.x}
                       y={currentPoint.y}
                       r={6}
-                      fill="#f7c94f"
+                      fill="#d97706"
                       stroke="#fff"
                       strokeWidth={2}
-                      label={{ value: "●", position: "top", fill: "#f7c94f" }}
+                      label={{ value: "●", position: "top", fill: "#d97706" }}
                     />
                   )}
                 </ScatterChart>

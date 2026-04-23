@@ -6,7 +6,8 @@ import {
   ResponsiveContainer, Legend
 } from "recharts";
 
-const COLORS = ["#4f8ef7", "#4caf50", "#f7c94f", "#f7794f", "#a78bfa", "#fb7185", "#34d399", "#f59e0b"];
+// Accessible, well-contrasted palette for white background
+const COLORS = ["#2563eb", "#ea580c", "#16a34a", "#7c3aed", "#0891b2", "#db2777", "#ca8a04", "#dc2626"];
 
 export default function AttributionPanel() {
   const { assets, optimizeResult, lookbackYears, attributionResult, setAttributionResult } = usePortfolioStore();
@@ -102,13 +103,13 @@ export default function AttributionPanel() {
             <h3>Monthly Attribution (last 12 months)</h3>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={periodChartData} margin={{ top: 10, right: 10, bottom: 30, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} />
                 <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
                 <Tooltip formatter={(v) => typeof v === "number" ? `${v.toFixed(3)}%` : v} />
                 <Legend />
                 {tickers.map((t, i) => (
-                  <Bar key={t} dataKey={t} stackId="a" fill={COLORS[i % COLORS.length]} />
+                  <Bar key={t} dataKey={t} stackId="a" fill={COLORS[i % COLORS.length]} minPointSize={2} />
                 ))}
               </BarChart>
             </ResponsiveContainer>
