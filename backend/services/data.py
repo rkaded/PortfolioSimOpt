@@ -237,12 +237,6 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
                 f"Data starts {actual_start.date()} — less than {lookback_years} years of history."
             )
 
-        for crisis_start, crisis_end, label in CRISIS_WINDOWS:
-            cs = pd.Timestamp(crisis_start)
-            ce = pd.Timestamp(crisis_end)
-            window = col.loc[cs:ce] if cs >= col.index.min() else pd.Series(dtype=float)
-            if len(window) < 20:
-                warnings[ticker].append(f"Lookback window excludes {label}.")
 
     prices = prices.ffill().dropna(how="all")
     return prices, warnings

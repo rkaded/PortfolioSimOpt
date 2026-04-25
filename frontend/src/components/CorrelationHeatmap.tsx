@@ -42,7 +42,7 @@ export default function CorrelationHeatmap() {
           {loading ? "Loading…" : "Load"}
         </button>
       </div>
-      <p className="constraint-hint">Pearson correlation from Ledoit-Wolf shrinkage covariance. Read-only.</p>
+      <p className="constraint-hint">Pearson correlation from historical daily returns. Read-only.</p>
 
       {error && <div className="error-msg">{error}</div>}
 

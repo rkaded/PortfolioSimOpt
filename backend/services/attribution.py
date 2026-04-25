@@ -51,20 +51,14 @@ def compute_return_attribution(
 def compute_correlation_matrix(returns: pd.DataFrame) -> dict:
     """
     Returns correlation matrix as {tickers: [...], matrix: [[...]]}.
-    Uses Pearson correlation from Ledoit-Wolf covariance.
+    Uses raw Pearson correlation so negative correlations are preserved.
+    Ledoit-Wolf is intentionally not used here — shrinkage pulls all
+    correlations toward a positive average, hiding genuine inverse relationships.
     """
-    from pypfopt import risk_models
-
     ret = returns.dropna()
     tickers = list(ret.columns)
-
-    try:
-        cov = risk_models.CovarianceShrinkage(ret, returns_data=True).ledoit_wolf()
-        std = np.sqrt(np.diag(cov.values))
-        corr_matrix = cov.values / np.outer(std, std)
-        np.fill_diagonal(corr_matrix, 1.0)
-    except Exception:
-        corr_matrix = ret.corr().values
+    corr_matrix = ret.corr().values
+    np.fill_diagonal(corr_matrix, 1.0)
 
     return {
         "tickers": tickers,
