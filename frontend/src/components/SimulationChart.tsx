@@ -43,18 +43,17 @@ export default function SimulationChart() {
 
   const sim = simulationResult;
 
+  // Backend returns monthly-sampled points (1 per ~21 trading days)
+  // so index i = month i+1, year = (i+1)/12
   const chartData = sim
-    ? sim.bullish.map((_, i) => {
-        const year = ((i + 1) / 252).toFixed(2);
-        return {
-          day: i + 1,
-          year: parseFloat(year),
-          bullish: sim.bullish[i],
-          normal: sim.normal[i],
-          bearish: sim.bearish[i],
-          benchmark: sim.benchmark_path?.[i],
-        };
-      }).filter((_, i) => i % 5 === 0)
+    ? sim.bullish.map((_, i) => ({
+        month: i + 1,
+        year:  parseFloat(((i + 1) / 12).toFixed(3)),
+        bullish:   sim.bullish[i],
+        normal:    sim.normal[i],
+        bearish:   sim.bearish[i],
+        benchmark: sim.benchmark_path?.[i],
+      }))
     : [];
 
   const bm = sim?.benchmark_metrics;
@@ -81,7 +80,7 @@ export default function SimulationChart() {
         <>
           <div className="methodology-note">
             Scenarios: Bullish = 75th pct | Normal = 50th pct (median) | Bearish = 25th pct
-            &nbsp;·&nbsp; 10,000 paths &nbsp;·&nbsp; Parametric multivariate normal with Ledoit-Wolf covariance
+            &nbsp;·&nbsp; 1,000 paths &nbsp;·&nbsp; Parametric normal with Ledoit-Wolf covariance
           </div>
 
           <ResponsiveContainer width="100%" height={300}>
