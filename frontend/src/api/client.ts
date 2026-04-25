@@ -28,6 +28,12 @@ export interface Constraints {
   esg_exclusions: string[];
 }
 
+export interface MuAdjustment {
+  input_pct: number;
+  adjusted_pct: number;
+  adjustment_pct: number;
+}
+
 export interface OptimizeResult {
   status: "ok" | "infeasible";
   weights?: Record<string, number>;
@@ -35,6 +41,7 @@ export interface OptimizeResult {
   portfolio_expected_return?: number;
   sharpe_ratio?: number | null;
   efficient_frontier?: { expected_return: number; volatility: number }[];
+  mu_adjustments?: Record<string, MuAdjustment>;
   binding_constraint?: string;
   violation?: number;
   message?: string;
