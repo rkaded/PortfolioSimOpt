@@ -79,15 +79,11 @@ export default function OptimiserPanel() {
       {error && <div className="error-msg">{error}</div>}
 
       {isInfeasible && (
-        <div className="infeasible-box">
-          <strong>Optimiser Infeasible</strong>
-          <p>{optimizeResult!.message}</p>
-          <p className="binding">
-            Binding constraint: <code>{optimizeResult!.binding_constraint}</code>
-            {optimizeResult!.violation != null && ` (by ${(optimizeResult!.violation * 100).toFixed(2)}%)`}
-          </p>
-          <p className="relax-hint">Relax the binding constraint above to find a feasible solution.</p>
-        </div>
+        <InfeasibleCard
+          bindingConstraint={optimizeResult!.binding_constraint}
+          violation={optimizeResult!.violation}
+          message={optimizeResult!.message}
+        />
       )}
 
       {optimizeResult?.status === "ok" && (
@@ -182,6 +178,69 @@ function Metric({ label, value }: { label: string; value: string }) {
     <div className="metric-card">
       <div className="metric-label">{label}</div>
       <div className="metric-value">{value}</div>
+    </div>
+  );
+}
+
+const CONSTRAINT_EXPLANATIONS: Record<string, { title: string; fix: string }> = {
+  target_return: {
+    title: "Target return is too high",
+    fix: "Lower your target return, or add higher-expected-return assets to the portfolio.",
+  },
+  locked_positions: {
+    title: "Locked positions leave no room",
+    fix: "Your locked positions sum to 100% or more. Reduce the locked weights to leave room for the optimiser.",
+  },
+  "locked_positions/esg_exclusions": {
+    title: "All assets are locked or excluded",
+    fix: "Every asset is either locked or ESG-excluded. Remove some exclusions or unlock positions.",
+  },
+  constraints_combination: {
+    title: "Constraints conflict with each other",
+    fix: "Your combination of sector caps, asset floors, and return target cannot be satisfied simultaneously. Try relaxing one constraint at a time.",
+  },
+};
+
+function resolveExplanation(raw: string | undefined): { title: string; fix: string } {
+  if (!raw) return { title: "No feasible solution found", fix: "Review your constraints and target return." };
+
+  if (CONSTRAINT_EXPLANATIONS[raw]) return CONSTRAINT_EXPLANATIONS[raw];
+
+  // Dynamic patterns
+  if (raw.startsWith("sector_cap:")) {
+    const sector = raw.replace("sector_cap:", "");
+    return {
+      title: `Sector cap too tight: ${sector}`,
+      fix: `The minimum weights you've set for assets in "${sector}" exceed the sector cap. Reduce asset floor constraints or raise the sector cap.`,
+    };
+  }
+  if (raw.startsWith("asset_bounds:")) {
+    const ticker = raw.replace("asset_bounds:", "");
+    return {
+      title: `Asset bound conflict: ${ticker}`,
+      fix: `The minimum weight for ${ticker} is set higher than its maximum weight. Fix the bounds in the Constraints panel.`,
+    };
+  }
+
+  return { title: "Optimiser could not find a feasible solution", fix: "Review your constraints and target return." };
+}
+
+function InfeasibleCard({ bindingConstraint, violation, message }: {
+  bindingConstraint?: string;
+  violation?: number | null;
+  message?: string;
+}) {
+  const { title, fix } = resolveExplanation(bindingConstraint);
+  return (
+    <div className="infeasible-box">
+      <div className="infeasible-title">⚠ {title}</div>
+      {violation != null && (
+        <div className="infeasible-violation">
+          Missed by {(violation * 100).toFixed(2)}%
+        </div>
+      )}
+      <p className="infeasible-fix">{fix}</p>
+      {message && <p className="infeasible-detail">{message}</p>}
     </div>
   );
 }

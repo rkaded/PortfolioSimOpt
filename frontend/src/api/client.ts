@@ -117,6 +117,21 @@ export const fetchAttribution = (assets: string[], weights: Record<string, numbe
 export const fetchCorrelation = (tickers: string[], lookback_years: number) =>
   api.post<CorrelationResult>("/assets/correlation", { tickers, lookback_years }).then((r) => r.data);
 
+export interface StressPeriod {
+  label: string;
+  start: string;
+  end: string;
+  portfolio_return: number | null;
+  asset_returns: Record<string, number>;
+  note: string | null;
+}
+
+export const runStressTest = (
+  tickers: string[],
+  weights: Record<string, number>,
+) =>
+  api.post<{ periods: StressPeriod[] }>("/stress-test", { tickers, weights }).then((r) => r.data);
+
 export const exportAttributionCsv = (assets: string[], weights: Record<string, number>, lookback_years: number) =>
   api
     .post("/attribution/export", { assets, weights, lookback_years }, { responseType: "blob" })

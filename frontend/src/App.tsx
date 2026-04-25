@@ -5,29 +5,47 @@ import OptimizerPanel from "./components/OptimizerPanel";
 import SimulationChart from "./components/SimulationChart";
 import CorrelationHeatmap from "./components/CorrelationHeatmap";
 import AttributionPanel from "./components/AttributionPanel";
+import StressPanel from "./components/StressPanel";
+import { usePortfolioStore } from "./store/portfolio";
 import "./App.css";
 
-type Tab = "assets" | "constraints" | "optimizer" | "simulation" | "correlation" | "attribution";
+type Tab = "assets" | "constraints" | "optimizer" | "simulation" | "stress" | "correlation" | "attribution";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "assets",      label: "Assets" },
   { id: "optimizer",   label: "Optimiser" },
   { id: "simulation",  label: "Simulation" },
+  { id: "stress",      label: "Stress Test" },
   { id: "correlation", label: "Correlation" },
   { id: "attribution", label: "Attribution" },
 ];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("assets");
+  const { clearPortfolio, assets } = usePortfolioStore();
+
+  function handleClear() {
+    if (confirm("Clear all assets and constraints? This cannot be undone.")) {
+      clearPortfolio();
+    }
+  }
 
   return (
     <div className="app">
       <header className="app-header">
         <div className="header-left">
           <span className="logo">Folio</span>
+          {assets.length > 0 && (
+            <span className="save-indicator">● {assets.length} asset{assets.length !== 1 ? "s" : ""} saved</span>
+          )}
         </div>
-        <div className="not-advice-banner">
-          Quantitative analysis only — not investment advice.
+        <div className="header-right">
+          {assets.length > 0 && (
+            <button className="btn-ghost-sm" onClick={handleClear}>Clear portfolio</button>
+          )}
+          <div className="not-advice-banner">
+            Quantitative analysis only — not investment advice.
+          </div>
         </div>
       </header>
 
@@ -49,6 +67,7 @@ export default function App() {
         {tab === "optimizer" && <OptimizerPanel />}
         {tab === "simulation" && <SimulationChart />}
         {tab === "correlation" && <CorrelationHeatmap />}
+        {tab === "stress"      && <StressPanel />}
         {tab === "attribution" && <AttributionPanel />}
       </main>
     </div>

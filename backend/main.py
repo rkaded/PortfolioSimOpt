@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import assets, optimizer, simulation, attribution
+from routers import assets, optimizer, simulation, attribution, stress
 
 app = FastAPI(title="Folio", version="1.0.0")
 
@@ -18,6 +18,7 @@ app.include_router(assets.router)
 app.include_router(optimizer.router)
 app.include_router(simulation.router)
 app.include_router(attribution.router)
+app.include_router(stress.router)
 
 
 @app.get("/health")

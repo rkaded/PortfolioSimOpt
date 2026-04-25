@@ -453,6 +453,86 @@ input:focus, select:focus {
 .scenario-value.benchmark { color: var(--muted); }
 .benchmark-row td { color: var(--muted); font-style: italic; border-top: 1px dashed var(--border); }
 
+/* ===== Header extras ===== */
+.header-right { display: flex; align-items: center; gap: 12px; }
+.save-indicator { font-size: 11px; color: var(--success); font-weight: 500; }
+.btn-ghost-sm {
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.btn-ghost-sm:hover { background: #f1f5f9; color: var(--danger); border-color: #fecdd3; }
+
+/* ===== Info message ===== */
+.info-msg {
+  font-size: 13px;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  color: #1e40af;
+}
+
+/* ===== Infeasible card (updated) ===== */
+.infeasible-title  { font-weight: 700; color: var(--danger); font-size: 14px; }
+.infeasible-violation { font-size: 12px; color: var(--danger); font-weight: 500; }
+.infeasible-fix    { font-size: 13px; color: #7c2d12; }
+.infeasible-detail { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 4px; }
+
+/* ===== Stress test panel ===== */
+.stress-description { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.stress-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.stress-weights-summary { display: flex; flex-wrap: wrap; gap: 6px; }
+.weight-chip {
+  font-size: 11px;
+  font-family: monospace;
+  background: #eff6ff;
+  color: var(--primary);
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+.stress-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.stress-card {
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stress-severe   { background: #fff1f2; border-color: #fca5a5; }
+.stress-bad      { background: #fff7ed; border-color: #fed7aa; }
+.stress-mild     { background: #fffbeb; border-color: #fde68a; }
+.stress-positive { background: #f0fdf4; border-color: #bbf7d0; }
+.stress-neutral  { background: #f8fafc; border-color: var(--border); }
+
+.stress-card-header { display: flex; flex-direction: column; gap: 2px; }
+.stress-label  { font-weight: 700; font-size: 13px; color: var(--text); }
+.stress-date   { font-size: 11px; color: var(--muted); font-family: monospace; }
+.stress-return { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stress-severe   .stress-return { color: var(--danger); }
+.stress-bad      .stress-return { color: #ea580c; }
+.stress-mild     .stress-return { color: var(--warn); }
+.stress-positive .stress-return { color: var(--success); }
+
+.stress-note { font-size: 12px; color: var(--muted); font-style: italic; }
+.stress-breakdown { display: flex; flex-wrap: wrap; gap: 4px; }
+.stress-asset-chip {
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.stress-asset-chip.neg { background: #fff1f2; color: var(--danger); }
+.stress-asset-chip.pos { background: #f0fdf4; color: var(--success); }
+
 /* ===== Recharts overrides ===== */
 .recharts-cartesian-axis-tick text { fill: var(--muted) !important; font-size: 11px; }
 .recharts-legend-item-text         { color: var(--text) !important; font-size: 12px; }

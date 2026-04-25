@@ -25,7 +25,12 @@ _PRICE_CACHE: dict[tuple, tuple[float, pd.Series]] = {}
 CACHE_TTL = 300  # 5 minutes
 
 CRISIS_WINDOWS = [
-    ("2020-02-01", "2020-06-30", "2020 COVID drawdown"),
+    ("2000-03-01", "2002-10-31", "Dot-com crash (2000–02)"),
+    ("2007-10-01", "2009-03-31", "Global Financial Crisis (2007–09)"),
+    ("2011-07-01", "2011-10-31", "2011 US debt-ceiling selloff"),
+    ("2018-10-01", "2018-12-31", "Q4 2018 rate-hike selloff"),
+    ("2020-02-01", "2020-06-30", "COVID-19 crash (2020)"),
+    ("2022-01-01", "2022-12-31", "2022 rate-hike bear market"),
 ]
 
 
@@ -246,6 +251,57 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
 def compute_returns(prices: pd.DataFrame) -> pd.DataFrame:
     """Daily log returns."""
     return np.log(prices / prices.shift(1)).dropna()
+
+
+def compute_stress_test(prices: pd.DataFrame, weights: dict[str, float]) -> list[dict]:
+    """
+    For each CRISIS_WINDOW, compute the weighted portfolio return over that period.
+    Prices that don't cover the full window are included with the data that exists.
+    """
+    results = []
+    weight_series = pd.Series(weights)
+
+    for crisis_start, crisis_end, label in CRISIS_WINDOWS:
+        cs = pd.Timestamp(crisis_start)
+        ce = pd.Timestamp(crisis_end)
+
+        available = [t for t in weight_series.index if t in prices.columns]
+        if not available:
+            continue
+
+        window = prices[available].loc[cs:ce].dropna(how="all")
+        if len(window) < 5:
+            results.append({
+                "label": label,
+                "start": crisis_start,
+                "end": crisis_end,
+                "portfolio_return": None,
+                "asset_returns": {},
+                "note": "Insufficient data for this period",
+            })
+            continue
+
+        # Total return for each asset over the window (first→last available price)
+        first = window.iloc[0]
+        last  = window.iloc[-1]
+        asset_returns = ((last - first) / first).to_dict()
+
+        # Renormalise weights to available assets
+        w = weight_series.reindex(available).fillna(0.0)
+        w = w / w.sum() if w.sum() > 0 else w
+
+        portfolio_return = float((pd.Series(asset_returns) * w).sum())
+
+        results.append({
+            "label": label,
+            "start": crisis_start,
+            "end": crisis_end,
+            "portfolio_return": round(portfolio_return, 6),
+            "asset_returns": {k: round(v, 6) for k, v in asset_returns.items()},
+            "note": None,
+        })
+
+    return results
 
 
 def compute_historical_stats(prices: pd.DataFrame) -> dict:
