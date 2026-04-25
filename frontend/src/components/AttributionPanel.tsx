@@ -10,7 +10,7 @@ import {
 const COLORS = ["#2563eb", "#ea580c", "#16a34a", "#7c3aed", "#0891b2", "#db2777", "#ca8a04", "#dc2626"];
 
 export default function AttributionPanel() {
-  const { assets, optimizeResult, lookbackYears, attributionResult, setAttributionResult } = usePortfolioStore();
+  const { optimizeResult, lookbackYears, attributionResult, setAttributionResult } = usePortfolioStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
