@@ -1,5 +1,7 @@
 import os
 import time
+from io import StringIO
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import httpx
 import pandas as pd
 import numpy as np
@@ -12,8 +14,12 @@ TWELVE_DATA_KEY = os.environ.get("TWELVE_DATA_KEY", "")
 TIINGO_API_KEY  = os.environ.get("TIINGO_API_KEY", "")
 TIINGO_BASE     = "https://api.tiingo.com/tiingo/daily"
 
-# In-memory price cache: {(ticker, lookback_years): (fetched_at, pd.Series)}
-# Shared across all endpoints — prevents redundant API calls within the same session.
+# Persistent HTTP client — reuses TCP/TLS connections across requests,
+# eliminating per-request SSL handshake overhead (~200-400 ms each).
+_HTTP = httpx.Client(timeout=15, limits=httpx.Limits(max_connections=20, max_keepalive_connections=10))
+
+# In-memory price cache: {(ticker, start, end): (fetched_at, pd.Series)}
+# Shared across all endpoints — prevents redundant API calls within a session.
 _PRICE_CACHE: dict[tuple, tuple[float, pd.Series]] = {}
 CACHE_TTL = 300  # 5 minutes
 
@@ -28,49 +34,38 @@ CRISIS_WINDOWS = [
 
 def _fetch_twelve_data(ticker: str, start: str, end: str) -> pd.Series | None:
     """
-    Fetch daily close prices from Twelve Data.
-    Free tier: 800 requests/day, 8 req/min — plenty for a demo app with caching.
-    Requires TWELVE_DATA_KEY env var (free signup at twelvedata.com).
+    Fetch daily close prices from Twelve Data using CSV format.
+    CSV is ~5× smaller than JSON for the same data, reducing transfer time.
+    Uses the shared persistent HTTP client to avoid per-request SSL handshakes.
     """
     if not TWELVE_DATA_KEY:
         return None
 
-    # Calculate outputsize from date range (add 10% buffer for holidays/weekends)
-    start_dt = datetime.strptime(start, "%Y-%m-%d")
-    end_dt   = datetime.strptime(end,   "%Y-%m-%d")
-    days     = (end_dt - start_dt).days
-    outputsize = min(int(days * 0.75) + 60, 5000)  # trading days ≈ 0.71 × calendar days
-
     try:
-        resp = httpx.get(
+        resp = _HTTP.get(
             "https://api.twelvedata.com/time_series",
             params={
                 "symbol":     ticker,
                 "interval":   "1day",
-                "outputsize": outputsize,
                 "start_date": start,
                 "end_date":   end,
+                "format":     "CSV",          # much smaller payload than JSON
+                "delimiter":  ";",
                 "apikey":     TWELVE_DATA_KEY,
             },
-            timeout=15,
         )
-        data = resp.json()
 
-        if data.get("status") == "error" or "values" not in data:
-            logger.warning(f"Twelve Data {ticker}: {data.get('message', 'unknown error')}")
+        text = resp.text.strip()
+        if not text or "error" in text.lower()[:30]:
+            logger.warning(f"Twelve Data {ticker}: {text[:120]}")
             return None
 
-        values = data["values"]
-        if not values:
-            logger.warning(f"Twelve Data {ticker}: empty response")
+        df = pd.read_csv(StringIO(text), sep=";", parse_dates=["datetime"])
+        if "datetime" not in df.columns or "close" not in df.columns:
+            logger.warning(f"Twelve Data {ticker}: unexpected columns {df.columns.tolist()}")
             return None
 
-        series = pd.Series(
-            {pd.Timestamp(v["datetime"]): float(v["close"]) for v in values},
-            name=ticker,
-        ).sort_index()
-
-        return series
+        return df.set_index("datetime")["close"].rename(ticker).sort_index()
 
     except Exception as e:
         logger.warning(f"Twelve Data fetch failed for {ticker}: {e}")
@@ -82,10 +77,9 @@ def _fetch_tiingo(ticker: str, start: str, end: str) -> pd.Series | None:
     if not TIINGO_API_KEY:
         return None
     try:
-        resp = httpx.get(
+        resp = _HTTP.get(
             f"{TIINGO_BASE}/{ticker}/prices",
             params={"startDate": start, "endDate": end, "token": TIINGO_API_KEY},
-            timeout=15,
         )
         if resp.status_code == 200:
             data = resp.json()
@@ -139,11 +133,19 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
     start_str = start.strftime("%Y-%m-%d")
     end_str   = end.strftime("%Y-%m-%d")
 
-    frames = {}
-    for t in tickers_list:
-        series = _fetch_single_ticker(t, start_str, end_str)
-        if series is not None:
-            frames[t] = series
+    # Fetch all tickers in parallel — total time ≈ slowest single ticker
+    # rather than sum of all ticker fetch times.
+    frames: dict[str, pd.Series] = {}
+    with ThreadPoolExecutor(max_workers=min(len(tickers_list), 8)) as pool:
+        future_to_ticker = {
+            pool.submit(_fetch_single_ticker, t, start_str, end_str): t
+            for t in tickers_list
+        }
+        for future in as_completed(future_to_ticker):
+            t = future_to_ticker[future]
+            series = future.result()
+            if series is not None:
+                frames[t] = series
 
     if not frames:
         return pd.DataFrame(), {t: ["No data returned."] for t in tickers_list}
