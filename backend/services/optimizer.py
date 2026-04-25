@@ -93,18 +93,12 @@ def build_optimizer(
             lower_bounds[ab.ticker] = ab.min_weight * residual
             upper_bounds[ab.ticker] = ab.max_weight * residual
 
-    explicit_caps = {ab.ticker for ab in constraints.asset_bounds if ab.ticker in free_tickers}
-    default_cap = min(0.30 * residual, residual)  # 30% per stock unless user set an explicit cap
-
     weight_bounds = [
-        (
-            lower_bounds.get(t, 0.0),
-            upper_bounds.get(t, default_cap if t not in explicit_caps else 1.0),
-        )
+        (lower_bounds.get(t, 0.0), upper_bounds.get(t, 1.0))
         for t in free_tickers
     ]
 
-    ef = EfficientFrontier(free_mu, cov_scaled, weight_bounds=weight_bounds, gamma=0.1)
+    ef = EfficientFrontier(free_mu, cov_scaled, weight_bounds=weight_bounds)
 
     for sc in constraints.sector_caps:
         sector_free = [t for t in sc.tickers if t in free_tickers]
@@ -227,10 +221,10 @@ def compute_efficient_frontier(
     free_mu = mu_series[free_tickers] * residual
     cov = risk_models.CovarianceShrinkage(free_returns, returns_data=True).ledoit_wolf() * (residual ** 2)
 
-    explicit_caps = {ab.ticker for ab in constraints.asset_bounds if ab.ticker in free_tickers}
-    default_cap = min(0.30 * residual, residual)
+    lower_bounds_f = {ab.ticker: ab.min_weight * residual for ab in constraints.asset_bounds if ab.ticker in free_tickers}
+    upper_bounds_f = {ab.ticker: ab.max_weight * residual for ab in constraints.asset_bounds if ab.ticker in free_tickers}
     frontier_bounds = [
-        (0.0, default_cap if t not in explicit_caps else 1.0)
+        (lower_bounds_f.get(t, 0.0), upper_bounds_f.get(t, 1.0))
         for t in free_tickers
     ]
 
@@ -241,7 +235,7 @@ def compute_efficient_frontier(
     points = []
     for t in targets:
         try:
-            ef = EfficientFrontier(free_mu, cov, weight_bounds=frontier_bounds, gamma=0.1)
+            ef = EfficientFrontier(free_mu, cov, weight_bounds=frontier_bounds)
             ef.efficient_return(t)
             perf = ef.portfolio_performance(verbose=False)
             points.append({"expected_return": float(perf[0]) / residual, "volatility": float(perf[1])})
