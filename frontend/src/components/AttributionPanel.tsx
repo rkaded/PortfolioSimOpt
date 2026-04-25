@@ -16,12 +16,17 @@ export default function AttributionPanel() {
   const [exporting, setExporting] = useState(false);
 
   const weights = optimizeResult?.status === "ok" ? optimizeResult.weights! : null;
+  // Only include tickers that have a non-zero optimised weight
+  const activeTickers = weights
+    ? Object.entries(weights).filter(([, w]) => w > 0.001).map(([t]) => t)
+    : [];
 
   async function load() {
-    if (!weights) { setError("Run optimiser first to get weights."); return; }
+    if (!weights || activeTickers.length === 0) { setError("Run optimiser first to get weights."); return; }
     setLoading(true); setError(null);
     try {
-      const result = await fetchAttribution(assets.map((a) => a.ticker), weights, lookbackYears);
+      const activeWeights = Object.fromEntries(activeTickers.map((t) => [t, weights[t]]));
+      const result = await fetchAttribution(activeTickers, activeWeights, lookbackYears);
       setAttributionResult(result);
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? "Attribution failed.");
@@ -31,10 +36,11 @@ export default function AttributionPanel() {
   }
 
   async function doExport() {
-    if (!weights) return;
+    if (!weights || activeTickers.length === 0) return;
     setExporting(true);
     try {
-      await exportAttributionCsv(assets.map((a) => a.ticker), weights, lookbackYears);
+      const activeWeights = Object.fromEntries(activeTickers.map((t) => [t, weights[t]]));
+      await exportAttributionCsv(activeTickers, activeWeights, lookbackYears);
     } catch (e: any) {
       setError("Export failed.");
     } finally {
@@ -43,7 +49,7 @@ export default function AttributionPanel() {
   }
 
   const attr = attributionResult;
-  const tickers = assets.map((a) => a.ticker);
+  const tickers = activeTickers;
 
   const periodChartData = attr?.periods.slice(-12).map((p) => {
     const entry: Record<string, any> = { date: p.date };

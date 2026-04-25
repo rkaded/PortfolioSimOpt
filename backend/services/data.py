@@ -161,6 +161,51 @@ def _fetch_single_fallback(ticker: str, start: str, end: str) -> pd.Series | Non
 # Public API
 # ---------------------------------------------------------------------------
 
+def fetch_prices_since(tickers: list[str], start_str: str) -> pd.DataFrame:
+    """
+    Fetch prices from a fixed start date to today, using the shared cache.
+    Returns a raw price DataFrame with no warnings — for stress test use only.
+    """
+    end_str = datetime.today().strftime("%Y-%m-%d")
+    now = time.monotonic()
+
+    tickers_list = list(tickers)
+    frames: dict[str, pd.Series] = {}
+    to_fetch: list[str] = []
+
+    for t in tickers_list:
+        key = (t, start_str, end_str)
+        if key in _PRICE_CACHE:
+            fetched_at, series = _PRICE_CACHE[key]
+            if now - fetched_at < CACHE_TTL:
+                frames[t] = series
+                continue
+        to_fetch.append(t)
+
+    if to_fetch:
+        batch = _fetch_yfinance_batch(to_fetch, start_str, end_str)
+        for t in list(to_fetch):
+            if t in batch:
+                frames[t] = batch[t]
+                _PRICE_CACHE[(t, start_str, end_str)] = (now, batch[t])
+                to_fetch.remove(t)
+
+        if to_fetch:
+            with ThreadPoolExecutor(max_workers=min(len(to_fetch), 8)) as pool:
+                future_map = {pool.submit(_fetch_single_fallback, t, start_str, end_str): t for t in to_fetch}
+                for future in as_completed(future_map):
+                    t = future_map[future]
+                    series = future.result()
+                    if series is not None:
+                        frames[t] = series
+                        _PRICE_CACHE[(t, start_str, end_str)] = (now, series)
+
+    if not frames:
+        return pd.DataFrame()
+
+    return pd.DataFrame(frames).ffill().dropna(how="all")
+
+
 def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFrame, dict]:
     end   = datetime.today()
     start = end - timedelta(days=lookback_years * 365 + 30)
