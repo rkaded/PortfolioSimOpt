@@ -161,12 +161,12 @@ def _fetch_single_fallback(ticker: str, start: str, end: str) -> pd.Series | Non
 # Public API
 # ---------------------------------------------------------------------------
 
-def fetch_prices_since(tickers: list[str], start_str: str) -> pd.DataFrame:
+def fetch_prices_since(tickers: list[str], start_str: str, end_str: str | None = None) -> pd.DataFrame:
     """
-    Fetch prices from a fixed start date to today, using the shared cache.
+    Fetch prices between start_str and end_str (defaults to today), using the shared cache.
     Returns a raw price DataFrame with no warnings — for stress test use only.
     """
-    end_str = datetime.today().strftime("%Y-%m-%d")
+    end_str = end_str or datetime.today().strftime("%Y-%m-%d")
     now = time.monotonic()
 
     tickers_list = list(tickers)
@@ -292,51 +292,53 @@ def compute_returns(prices: pd.DataFrame) -> pd.DataFrame:
     return np.log(prices / prices.shift(1)).dropna()
 
 
-def compute_stress_test(prices: pd.DataFrame, weights: dict[str, float]) -> list[dict]:
+def compute_stress_test(tickers: list[str], weights: dict[str, float]) -> list[dict]:
     """
-    For each CRISIS_WINDOW, compute the weighted portfolio return over that period.
-    Prices that don't cover the full window are included with the data that exists.
+    For each CRISIS_WINDOW, fetch only that window's price data independently.
+    Each window is a separate small cache entry — no 25yr lookback needed.
+    Tickers that didn't exist during a crisis are handled gracefully.
     """
+    import math
     results = []
     weight_series = pd.Series(weights)
 
     for crisis_start, crisis_end, label in CRISIS_WINDOWS:
-        cs = pd.Timestamp(crisis_start)
-        ce = pd.Timestamp(crisis_end)
+        window_prices = fetch_prices_since(tickers, crisis_start, end_str=crisis_end)
 
-        available = [t for t in weight_series.index if t in prices.columns]
-        if not available:
-            continue
+        available = [t for t in weight_series.index if t in window_prices.columns and window_prices[t].notna().any()]
 
-        window = prices[available].loc[cs:ce].dropna(how="all")
-        if len(window) < 5:
+        if len(window_prices) < 5 or not available:
             results.append({
                 "label": label,
                 "start": crisis_start,
                 "end": crisis_end,
                 "portfolio_return": None,
                 "asset_returns": {},
-                "note": "Insufficient data for this period",
+                "note": "No data available for this period",
             })
             continue
 
-        # Total return for each asset over the window (first→last available price)
-        first = window.iloc[0]
-        last  = window.iloc[-1]
-        asset_returns = ((last - first) / first).to_dict()
+        first = window_prices[available].bfill().iloc[0]
+        last  = window_prices[available].ffill().iloc[-1]
+        raw_returns = ((last - first) / first)
 
-        # Renormalise weights to available assets
+        asset_returns = {
+            k: 0.0 if (math.isnan(v) or math.isinf(v)) else round(float(v), 6)
+            for k, v in raw_returns.to_dict().items()
+        }
+
         w = weight_series.reindex(available).fillna(0.0)
         w = w / w.sum() if w.sum() > 0 else w
 
-        portfolio_return = float((pd.Series(asset_returns) * w).sum())
+        raw_portfolio = float((pd.Series(asset_returns) * w).sum())
+        portfolio_return = 0.0 if (math.isnan(raw_portfolio) or math.isinf(raw_portfolio)) else round(raw_portfolio, 6)
 
         results.append({
             "label": label,
             "start": crisis_start,
             "end": crisis_end,
-            "portfolio_return": round(portfolio_return, 6),
-            "asset_returns": {k: round(v, 6) for k, v in asset_returns.items()},
+            "portfolio_return": portfolio_return,
+            "asset_returns": asset_returns,
             "note": None,
         })
 
