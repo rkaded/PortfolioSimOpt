@@ -98,6 +98,25 @@ export default function OptimiserPanel() {
             <Metric label="Sharpe Ratio" value={optimizeResult.sharpe_ratio?.toFixed(2) ?? "—"} />
           </div>
 
+          {optimizeResult.mu_adjustments && (
+            <div className="mu-adjustment-note">
+              <span className="mu-adj-label">
+                ⓘ Expected returns adjusted from CAGR → arithmetic mean (+σ²/2) for MVO accuracy
+              </span>
+              <div className="mu-adj-table">
+                {Object.entries(optimizeResult.mu_adjustments)
+                  .filter(([, v]: [string, any]) => v.adjustment_pct > 0.01)
+                  .sort(([, a]: [string, any], [, b]: [string, any]) => b.adjustment_pct - a.adjustment_pct)
+                  .map(([ticker, v]: [string, any]) => (
+                    <span key={ticker} className="mu-adj-chip">
+                      {ticker}: {v.input_pct.toFixed(1)}% → {v.adjusted_pct.toFixed(1)}%
+                      <span className="mu-adj-bump"> (+{v.adjustment_pct.toFixed(1)}pp)</span>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
           <div className="weights-section">
             <h3>Optimal Weights</h3>
             <div className="weights-bars">

@@ -5,6 +5,40 @@ from pypfopt.exceptions import OptimizationError
 from models.schemas import Constraints
 
 
+def geometric_to_arithmetic(
+    mu_geo: pd.Series,
+    returns: pd.DataFrame,
+) -> tuple[pd.Series, dict]:
+    """
+    Convert user-supplied geometric (CAGR) expected returns to arithmetic means.
+
+    MVO maximises E[r] − λ·Var[r], where E[r] must be the arithmetic mean.
+    CAGR (geometric mean) understates arithmetic mean by σ²/2 per asset:
+
+        arithmetic_μ  =  geometric_μ  +  σ² / 2
+
+    where σ² is the annualised variance estimated from historical returns.
+
+    Returns
+    -------
+    mu_arith : pd.Series   — adjusted expected returns ready for the optimizer
+    adj_map  : dict        — per-ticker breakdown for UI transparency
+    """
+    annual_var = returns.var() * 252                        # annualised variance
+    adjustment = (0.5 * annual_var).reindex(mu_geo.index).fillna(0.0)
+    mu_arith   = mu_geo + adjustment
+
+    adj_map = {
+        ticker: {
+            "input_pct":      round(float(mu_geo[ticker])    * 100, 3),
+            "adjusted_pct":   round(float(mu_arith[ticker])  * 100, 3),
+            "adjustment_pct": round(float(adjustment[ticker]) * 100, 3),
+        }
+        for ticker in mu_geo.index
+    }
+    return mu_arith, adj_map
+
+
 class InfeasibleError(Exception):
     def __init__(self, message: str, binding_constraint: str, violation: float | None = None):
         super().__init__(message)
@@ -86,7 +120,8 @@ def run_optimization(
     mu_inputs: {ticker: annual_return_decimal}, e.g. {"AAPL": 0.08}
     target_return: annual, e.g. 0.08
     """
-    mu_series = pd.Series(mu_inputs, index=returns.columns).reindex(returns.columns).fillna(0.0)
+    mu_geo    = pd.Series(mu_inputs, index=returns.columns).reindex(returns.columns).fillna(0.0)
+    mu_series, adj_map = geometric_to_arithmetic(mu_geo, returns)
 
     try:
         ef, free_tickers, locked_map, residual = build_optimizer(returns, mu_series, constraints, target_return)
@@ -116,6 +151,7 @@ def run_optimization(
             "portfolio_volatility": float(perf[1]),
             "portfolio_expected_return": float(perf[0]) / residual if residual < 1.0 else float(perf[0]),
             "sharpe_ratio": float(perf[2]) if perf[2] is not None else None,
+            "mu_adjustments": adj_map,   # geometric → arithmetic breakdown, for UI transparency
         }
 
     except InfeasibleError as ie:
@@ -173,7 +209,8 @@ def compute_efficient_frontier(
     n_points: int = 50,
 ) -> list[dict]:
     """Returns list of {expected_return, volatility} points on the efficient frontier."""
-    mu_series = pd.Series(mu_inputs, index=returns.columns).reindex(returns.columns).fillna(0.0)
+    mu_geo       = pd.Series(mu_inputs, index=returns.columns).reindex(returns.columns).fillna(0.0)
+    mu_series, _ = geometric_to_arithmetic(mu_geo, returns)
 
     try:
         _, free_tickers, locked_map, residual = build_optimizer(returns, mu_series, constraints, 0.0)
