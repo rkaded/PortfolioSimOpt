@@ -3,6 +3,7 @@ import time
 from io import StringIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import httpx
+import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -29,14 +30,60 @@ CRISIS_WINDOWS = [
 
 
 # ---------------------------------------------------------------------------
-# Data sources  (priority: cache → Twelve Data → Tiingo fallback)
+# Data sources  (priority: cache → yfinance batch → Twelve Data → Tiingo)
 # ---------------------------------------------------------------------------
+
+def _fetch_yfinance_batch(tickers: list[str], start: str, end: str) -> dict[str, pd.Series]:
+    """
+    Batch-download all tickers in a single yfinance call.
+
+    yfinance fetches every ticker in one HTTP round-trip, so total time is
+    roughly the same as fetching one ticker.  No API key required; prices are
+    split/dividend adjusted automatically.
+
+    Returns a dict {ticker: pd.Series} for every ticker with data.
+    Tickers that return no data are omitted — callers should fall back.
+    """
+    try:
+        raw = yf.download(
+            tickers,
+            start=start,
+            end=end,
+            progress=False,
+            auto_adjust=True,
+            threads=True,
+        )
+        if raw.empty:
+            return {}
+
+        # Multi-ticker download → MultiIndex columns (field, ticker).
+        # Single-ticker download → flat columns (field names only).
+        if isinstance(raw.columns, pd.MultiIndex):
+            close = raw["Close"]
+        else:
+            # Flatten: rename the single "Close" column to the ticker symbol
+            close = raw[["Close"]].rename(columns={"Close": tickers[0]})
+
+        # yfinance returns tz-aware DatetimeIndex — strip tz for consistency
+        if close.index.tz is not None:
+            close.index = close.index.tz_localize(None)
+
+        result = {}
+        for ticker in close.columns:
+            s = close[ticker].dropna()
+            if not s.empty:
+                result[str(ticker)] = s.rename(str(ticker))
+        return result
+
+    except Exception as e:
+        logger.warning(f"yfinance batch failed for {tickers}: {e}")
+        return {}
+
 
 def _fetch_twelve_data(ticker: str, start: str, end: str) -> pd.Series | None:
     """
-    Fetch daily close prices from Twelve Data using CSV format.
+    Fallback: Twelve Data CSV format.
     CSV is ~5× smaller than JSON for the same data, reducing transfer time.
-    Uses the shared persistent HTTP client to avoid per-request SSL handshakes.
     """
     if not TWELVE_DATA_KEY:
         return None
@@ -49,7 +96,7 @@ def _fetch_twelve_data(ticker: str, start: str, end: str) -> pd.Series | None:
                 "interval":   "1day",
                 "start_date": start,
                 "end_date":   end,
-                "format":     "CSV",          # much smaller payload than JSON
+                "format":     "CSV",
                 "delimiter":  ";",
                 "apikey":     TWELVE_DATA_KEY,
             },
@@ -96,28 +143,12 @@ def _fetch_tiingo(ticker: str, start: str, end: str) -> pd.Series | None:
     return None
 
 
-def _fetch_single_ticker(ticker: str, start: str, end: str) -> pd.Series | None:
-    """
-    Fetch price series for one ticker, with 5-minute in-memory cache.
-    Source order: cache → Twelve Data → Tiingo.
-    """
-    cache_key = (ticker, start, end)
-    now = time.monotonic()
-
-    if cache_key in _PRICE_CACHE:
-        fetched_at, series = _PRICE_CACHE[cache_key]
-        if now - fetched_at < CACHE_TTL:
-            return series
-
+def _fetch_single_fallback(ticker: str, start: str, end: str) -> pd.Series | None:
+    """Per-ticker fallback chain when yfinance returns nothing for that ticker."""
     series = _fetch_twelve_data(ticker, start, end)
-
     if series is None:
-        logger.info(f"Twelve Data failed for {ticker}, trying Tiingo fallback")
+        logger.info(f"Twelve Data failed for {ticker}, trying Tiingo")
         series = _fetch_tiingo(ticker, start, end)
-
-    if series is not None:
-        _PRICE_CACHE[cache_key] = (now, series)
-
     return series
 
 
@@ -132,20 +163,46 @@ def fetch_prices(tickers: list[str], lookback_years: int = 5) -> tuple[pd.DataFr
     tickers_list = [tickers] if isinstance(tickers, str) else list(tickers)
     start_str = start.strftime("%Y-%m-%d")
     end_str   = end.strftime("%Y-%m-%d")
+    now = time.monotonic()
 
-    # Fetch all tickers in parallel — total time ≈ slowest single ticker
-    # rather than sum of all ticker fetch times.
+    # ── Step 1: serve warm-cache hits immediately ──────────────────────────
     frames: dict[str, pd.Series] = {}
-    with ThreadPoolExecutor(max_workers=min(len(tickers_list), 8)) as pool:
-        future_to_ticker = {
-            pool.submit(_fetch_single_ticker, t, start_str, end_str): t
-            for t in tickers_list
-        }
-        for future in as_completed(future_to_ticker):
-            t = future_to_ticker[future]
-            series = future.result()
-            if series is not None:
+    to_fetch: list[str] = []
+
+    for t in tickers_list:
+        key = (t, start_str, end_str)
+        if key in _PRICE_CACHE:
+            fetched_at, series = _PRICE_CACHE[key]
+            if now - fetched_at < CACHE_TTL:
                 frames[t] = series
+                continue
+        to_fetch.append(t)
+
+    # ── Step 2: batch-download all uncached tickers in one yfinance call ───
+    if to_fetch:
+        batch = _fetch_yfinance_batch(to_fetch, start_str, end_str)
+
+        # Cache hits from batch
+        for t in list(to_fetch):
+            if t in batch:
+                frames[t] = batch[t]
+                _PRICE_CACHE[(t, start_str, end_str)] = (now, batch[t])
+                to_fetch.remove(t)
+
+        # ── Step 3: parallel fallback for any tickers yfinance missed ──────
+        if to_fetch:
+            logger.info(f"yfinance missed {to_fetch}, trying fallbacks in parallel")
+            with ThreadPoolExecutor(max_workers=min(len(to_fetch), 8)) as pool:
+                future_map = {
+                    pool.submit(_fetch_single_fallback, t, start_str, end_str): t
+                    for t in to_fetch
+                }
+                for future in as_completed(future_map):
+                    t = future_map[future]
+                    series = future.result()
+                    if series is not None:
+                        frames[t] = series
+                        _PRICE_CACHE[(t, start_str, end_str)] = (now, series)
 
     if not frames:
         return pd.DataFrame(), {t: ["No data returned."] for t in tickers_list}

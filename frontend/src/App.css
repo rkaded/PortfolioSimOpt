@@ -359,6 +359,72 @@ input:focus, select:focus {
 /* ===== Attribution ===== */
 .attr-chart h3 { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
+/* ===== Info tooltip (hover-to-explain jargon) ===== */
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  cursor: help;
+  vertical-align: middle;
+}
+.info-icon {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.info-tooltip:hover .info-icon { opacity: 1; }
+.tooltip-bubble {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 230px;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 9px 12px;
+  border-radius: 7px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  text-align: left;
+  white-space: normal;
+  z-index: 200;
+  transition: opacity 0.15s;
+}
+/* Arrow */
+.tooltip-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1e293b;
+}
+.info-tooltip:hover .tooltip-bubble {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ===== Scenario outcomes table ===== */
+.scenario-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.scenario-value { font-variant-numeric: tabular-nums; font-weight: 600; }
+.scenario-value.bullish { color: var(--success); }
+.scenario-value.normal  { color: var(--primary); }
+.scenario-value.bearish { color: var(--danger); }
+
 /* ===== Recharts overrides ===== */
 .recharts-cartesian-axis-tick text { fill: var(--muted) !important; font-size: 11px; }
 .recharts-legend-item-text         { color: var(--text) !important; font-size: 12px; }

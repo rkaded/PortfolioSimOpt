@@ -11,6 +11,43 @@ const PCT = (v: number | null | undefined) =>
 
 const FMT = (v: number) => `${((v - 1) * 100).toFixed(1)}%`;
 
+// ── Tooltip-on-hover for jargon terms ────────────────────────────────────────
+const METRIC_TOOLTIPS: Record<string, string> = {
+  "Tracking Error":
+    "How much your portfolio's daily returns deviate from the benchmark, annualised. Lower means the portfolio moves more like the benchmark.",
+  "Information Ratio":
+    "Excess return earned per unit of tracking risk taken versus the benchmark. Above 0.5 is generally considered good; negative means the portfolio underperformed.",
+  "Beta":
+    "Sensitivity to benchmark movements. Beta 1.0 = moves in lockstep with the benchmark; 0.5 = half the swings; >1.0 = amplified moves.",
+  "Max Drawdown (Portfolio)":
+    "The largest peak-to-trough percentage loss your portfolio experienced in the historical lookback period.",
+  "Max Drawdown (Benchmark)":
+    "The largest peak-to-trough percentage loss the benchmark experienced over the same period.",
+};
+
+function InfoIcon({ label }: { label: string }) {
+  const tip = METRIC_TOOLTIPS[label];
+  if (!tip) return null;
+  return (
+    <span className="info-tooltip">
+      <span className="info-icon">ⓘ</span>
+      <span className="tooltip-bubble">{tip}</span>
+    </span>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="metric-card">
+      <div className="metric-label">
+        {label}
+        <InfoIcon label={label} />
+      </div>
+      <div className="metric-value">{value}</div>
+    </div>
+  );
+}
+
 export default function SimulationChart() {
   const {
     assets, optimizeResult, lookbackYears, benchmarkTicker,
@@ -111,9 +148,9 @@ export default function SimulationChart() {
             <div className="bm-metrics">
               <h3>vs {benchmarkTicker}</h3>
               <div className="metrics-row">
-                <Metric label="Tracking Error" value={PCT(bm.tracking_error)} />
-                <Metric label="Information Ratio" value={bm.information_ratio?.toFixed(2) ?? "—"} />
-                <Metric label="Beta" value={bm.beta?.toFixed(2) ?? "—"} />
+                <Metric label="Tracking Error"           value={PCT(bm.tracking_error)} />
+                <Metric label="Information Ratio"        value={bm.information_ratio?.toFixed(2) ?? "—"} />
+                <Metric label="Beta"                     value={bm.beta?.toFixed(2) ?? "—"} />
                 <Metric label="Max Drawdown (Portfolio)" value={PCT(bm.max_drawdown_portfolio)} />
                 <Metric label="Max Drawdown (Benchmark)" value={PCT(bm.max_drawdown_benchmark)} />
               </div>
@@ -121,27 +158,35 @@ export default function SimulationChart() {
           )}
 
           <div className="scenario-summary">
-            <h3>Scenario Outcomes ({horizonYears}yr horizon)</h3>
+            <h3>
+              Scenario Outcomes ({horizonYears}yr horizon)
+              <span className="scenario-subtitle">— growth of $1.00 invested today</span>
+            </h3>
             <table className="asset-table">
               <thead>
                 <tr>
-                  <th>Scenario</th><th>Final Value</th><th>Ann. Return</th>
+                  <th>Scenario</th>
+                  <th>
+                    Grows to
+                    <span className="col-hint"> (per $1 invested)</span>
+                  </th>
+                  <th>Ann. Return</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>Bullish (75th pct)</td>
-                  <td>${sim.summary.bullish_final.toFixed(2)}</td>
+                  <td className="scenario-value bullish">${sim.summary.bullish_final.toFixed(2)}</td>
                   <td>{PCT(sim.summary.annualised_return_p75)}</td>
                 </tr>
                 <tr>
                   <td>Normal (50th pct)</td>
-                  <td>${sim.summary.normal_final.toFixed(2)}</td>
+                  <td className="scenario-value normal">${sim.summary.normal_final.toFixed(2)}</td>
                   <td>{PCT(sim.summary.annualised_return_p50)}</td>
                 </tr>
                 <tr>
                   <td>Bearish (25th pct)</td>
-                  <td>${sim.summary.bearish_final.toFixed(2)}</td>
+                  <td className="scenario-value bearish">${sim.summary.bearish_final.toFixed(2)}</td>
                   <td>{PCT(sim.summary.annualised_return_p25)}</td>
                 </tr>
               </tbody>
@@ -153,15 +198,6 @@ export default function SimulationChart() {
       <div className="disclosure not-advice">
         Quantitative analysis only — not investment advice.
       </div>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric-card">
-      <div className="metric-label">{label}</div>
-      <div className="metric-value">{value}</div>
     </div>
   );
 }
