@@ -189,6 +189,17 @@ export default function SimulationChart() {
                   <td className="scenario-value bearish">${sim.summary.bearish_final.toFixed(2)}</td>
                   <td>{PCT(sim.summary.annualised_return_p25)}</td>
                 </tr>
+                {sim.benchmark_path && (() => {
+                  const bmFinal = sim.benchmark_path[sim.benchmark_path.length - 1];
+                  const bmAnn   = Math.pow(bmFinal, 1 / horizonYears) - 1;
+                  return (
+                    <tr className="benchmark-row">
+                      <td>{benchmarkTicker} (median)</td>
+                      <td className="scenario-value benchmark">${bmFinal.toFixed(2)}</td>
+                      <td>{PCT(bmAnn)}</td>
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
           </div>

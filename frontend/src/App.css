@@ -423,9 +423,11 @@ input:focus, select:focus {
   margin-left: 6px;
 }
 .scenario-value { font-variant-numeric: tabular-nums; font-weight: 600; }
-.scenario-value.bullish { color: var(--success); }
-.scenario-value.normal  { color: var(--primary); }
-.scenario-value.bearish { color: var(--danger); }
+.scenario-value.bullish   { color: var(--success); }
+.scenario-value.normal    { color: var(--primary); }
+.scenario-value.bearish   { color: var(--danger); }
+.scenario-value.benchmark { color: var(--muted); }
+.benchmark-row td { color: var(--muted); font-style: italic; border-top: 1px dashed var(--border); }
 
 /* ===== Recharts overrides ===== */
 .recharts-cartesian-axis-tick text { fill: var(--muted) !important; font-size: 11px; }

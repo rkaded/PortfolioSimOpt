@@ -101,13 +101,13 @@ export default function AttributionPanel() {
 
           <div className="attr-chart">
             <h3>Monthly Attribution (last 12 months)</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={periodChartData} margin={{ top: 10, right: 10, bottom: 30, left: 10 }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={periodChartData} margin={{ top: 8, right: 10, bottom: 60, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} />
                 <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
                 <Tooltip formatter={(v) => typeof v === "number" ? `${v.toFixed(3)}%` : v} />
-                <Legend />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 12 }} />
                 {tickers.map((t, i) => (
                   <Bar key={t} dataKey={t} stackId="a" fill={COLORS[i % COLORS.length]} minPointSize={2} />
                 ))}
