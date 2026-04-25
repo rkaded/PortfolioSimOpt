@@ -395,6 +395,8 @@ input:focus, select:focus {
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);
   text-align: left;
   white-space: normal;
+  text-transform: none;
+  letter-spacing: 0;
   z-index: 200;
   transition: opacity 0.15s;
 }
