@@ -8,6 +8,7 @@ import AttributionPanel from "./components/AttributionPanel";
 import StressPanel from "./components/StressPanel";
 import { usePortfolioStore } from "./store/portfolio";
 import "./App.css";
+import { Analytics } from "@vercel/analytics/react"
 
 type Tab = "assets" | "constraints" | "optimizer" | "simulation" | "stress" | "correlation" | "attribution";
 
@@ -70,6 +71,7 @@ export default function App() {
         {tab === "stress"      && <StressPanel />}
         {tab === "attribution" && <AttributionPanel />}
       </main>
+      <Analytics />
     </div>
   );
 }
