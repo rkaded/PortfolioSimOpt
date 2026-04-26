@@ -1,0 +1,13 @@
+# Root-level accidental installs
+node_modules/
+package-lock.json
+package.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# OS
+.DS_Store
