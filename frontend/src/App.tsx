@@ -8,7 +8,7 @@ import AttributionPanel from "./components/AttributionPanel";
 import StressPanel from "./components/StressPanel";
 import { usePortfolioStore } from "./store/portfolio";
 import "./App.css";
-import { Analytics } from "@vercel/analytics/react"
+import { Analytics } from "@vercel/analytics/react";
 
 type Tab = "assets" | "constraints" | "optimizer" | "simulation" | "stress" | "correlation" | "attribution";
 
@@ -37,16 +37,16 @@ export default function App() {
         <div className="header-left">
           <span className="logo">Folio</span>
           {assets.length > 0 && (
-            <span className="save-indicator">● {assets.length} asset{assets.length !== 1 ? "s" : ""} saved</span>
+            <span className="save-indicator">
+              <span className="save-dot" />
+              {assets.length} asset{assets.length !== 1 ? "s" : ""}
+            </span>
           )}
         </div>
         <div className="header-right">
           {assets.length > 0 && (
-            <button className="btn-ghost-sm" onClick={handleClear}>Clear portfolio</button>
+            <button className="btn-ghost-sm" onClick={handleClear}>Clear</button>
           )}
-          <div className="not-advice-banner">
-            Quantitative analysis only — not investment advice.
-          </div>
         </div>
       </header>
 
@@ -54,7 +54,7 @@ export default function App() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`tab-btn ${tab === t.id ? "active" : ""}`}
+            className={\`tab-btn \${tab === t.id ? "active" : ""}\`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
@@ -71,6 +71,10 @@ export default function App() {
         {tab === "stress"      && <StressPanel />}
         {tab === "attribution" && <AttributionPanel />}
       </main>
+
+      <footer className="app-footer">
+        Quantitative analysis only — not investment advice.
+      </footer>
       <Analytics />
     </div>
   );

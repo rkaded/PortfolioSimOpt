@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-04T00:00:00.000Z",
+  "title": "Design System: Folio",
+  "extensions": {
+    "colorMeta": {
+      "instrument-blue": {
+        "role": "primary",
+        "displayName": "Instrument Blue",
+        "canonical": "oklch(48% 0.22 264)",
+        "tonalRamp": ["#0d1a4a", "#132266", "#182e8a", "#1a3eb0", "#2563eb", "#6b8ef0", "#a8bcf8", "#dde7fd"]
+      },
+      "midnight-slate": {
+        "role": "neutral",
+        "displayName": "Midnight Slate",
+        "canonical": "oklch(14% 0.022 264)",
+        "tonalRamp": ["#060810", "#0b1020", "#111929", "#1a2741", "#2e3e60", "#4f6080", "#8398b8", "#c8d4e8"]
+      },
+      "cool-mist": {
+        "role": "neutral",
+        "displayName": "Cool Mist",
+        "canonical": "oklch(96% 0.010 258)",
+        "tonalRamp": ["#1c2535", "#2d3c52", "#415470", "#5d7494", "#8aabcc", "#b8cfe3", "#dceaf5", "#f1f5f9"]
+      },
+      "white-surface": {
+        "role": "neutral",
+        "displayName": "White Surface",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": ["#1a1f28", "#2c3340", "#424c60", "#5e6e8a", "#8da0b8", "#c0cdd8", "#e4eaf0", "#ffffff"]
+      },
+      "steel-line": {
+        "role": "neutral",
+        "displayName": "Steel Line",
+        "canonical": "oklch(90% 0.010 258)",
+        "tonalRamp": ["#1c2535", "#2d3c52", "#415470", "#5d7494", "#8aabcc", "#b8cfe3", "#d4e2ee", "#e2e8f0"]
+      },
+      "steel-gray": {
+        "role": "neutral",
+        "displayName": "Steel Gray",
+        "canonical": "oklch(50% 0.032 258)",
+        "tonalRamp": ["#141c28", "#1e2c42", "#2a3d5c", "#3a5278", "#4f6b96", "#6d8fb5", "#9ab4d0", "#c8d8e8"]
+      },
+      "field-green": {
+        "role": "semantic",
+        "displayName": "Field Green",
+        "canonical": "oklch(44% 0.16 142)",
+        "tonalRamp": ["#061c0e", "#0d2e18", "#124526", "#166234", "#16a34a", "#3dba68", "#7dd49a", "#c0edcc"]
+      },
+      "amber-signal": {
+        "role": "semantic",
+        "displayName": "Amber Signal",
+        "canonical": "oklch(60% 0.16 65)",
+        "tonalRamp": ["#1e1000", "#341b00", "#523000", "#7a4800", "#d97706", "#e8a030", "#f2c36a", "#fae6b2"]
+      },
+      "alert-red": {
+        "role": "semantic",
+        "displayName": "Alert Red",
+        "canonical": "oklch(50% 0.22 25)",
+        "tonalRamp": ["#1a0404", "#2e0808", "#4d0c0c", "#7a1212", "#dc2626", "#e85555", "#f4908f", "#fdd0d0"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Logo mark in the sticky header. Appears once per page. The one moment the brand has a voice." },
+      "headline": { "displayName": "Headline", "purpose": "Panel section titles (h2). Primary organizational layer within a tab." },
+      "title": { "displayName": "Title", "purpose": "Subsection headers (h3). Uppercase with tracking when used as a category label." },
+      "body": { "displayName": "Body", "purpose": "All prose, error messages, advisory copy. Cap at 65-75ch in paragraph contexts." },
+      "label": { "displayName": "Label", "purpose": "Table headers, meta labels, chip text. Always uppercase. System's smallest legible unit." }
+    },
+    "shadows": [
+      {
+        "name": "ambient-separator",
+        "value": "0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05)",
+        "purpose": "Lifts panels and the sticky header off the background. Structural, not expressive. Do not amplify on hover."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default for state transitions: color, border, opacity. 150ms duration."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1100px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The singular CTA per view. Triggers optimizer runs, data fetches, confirmations.",
+      "html": "<button class=\"ds-btn-primary\">Run Optimiser</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; background: #2563eb; color: #ffffff; border: none; border-radius: 6px; padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.4; cursor: pointer; transition: background 0.15s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #1d4ed8; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.35); } .ds-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary confirmable actions. Sits alongside the primary without competing.",
+      "html": "<button class=\"ds-btn-secondary\">Add Constraint</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #2563eb; border: 1px solid #2563eb; border-radius: 6px; padding: 6px 12px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 1.4; cursor: pointer; transition: background 0.15s cubic-bezier(0.4,0,0.2,1); } .ds-btn-secondary:hover { background: #eff6ff; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); } .ds-btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-priority utility actions. Destructive variants (clear, remove) shift to Alert Red on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Clear portfolio</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; background: transparent; color: #64748b; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 10px; font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 400; line-height: 1.4; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; } .ds-btn-ghost:hover { background: #f1f5f9; color: #dc2626; border-color: #fecdd3; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(37,99,235,0.25); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Standard text and number inputs. Focus ring is the system's sole expressive moment in forms.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"AAPL\" />",
+      "css": ".ds-input { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; color: #0f172a; font-family: Inter, system-ui, sans-serif; font-size: 13px; padding: 6px 10px; outline: none; width: 160px; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); } .ds-input::placeholder { color: #94a3b8; }"
+    },
+    {
+      "name": "Tab Navigation",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Primary routing surface of the application shell. Underline is the sole active affordance.",
+      "html": "<nav class=\"ds-tab-nav\"><button class=\"ds-tab-btn ds-tab-btn--active\">Assets</button><button class=\"ds-tab-btn\">Optimiser</button><button class=\"ds-tab-btn\">Simulation</button></nav>",
+      "css": ".ds-tab-nav { display: flex; gap: 2px; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 28px; } .ds-tab-btn { padding: 12px 16px; background: none; border: none; border-bottom: 2px solid transparent; color: #64748b; cursor: pointer; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; transition: color 0.15s, border-color 0.15s; } .ds-tab-btn:hover { color: #0f172a; } .ds-tab-btn--active { color: #2563eb; border-bottom-color: #2563eb; }"
+    },
+    {
+      "name": "Metric Card",
+      "kind": "card",
+      "description": "Compact at-a-glance output block. Label above, large number below. Used in optimizer and simulation results.",
+      "html": "<div class=\"ds-metric-card\"><div class=\"ds-metric-label\">Sharpe Ratio</div><div class=\"ds-metric-value\">1.84</div></div>",
+      "css": ".ds-metric-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; min-width: 120px; display: flex; flex-direction: column; gap: 4px; } .ds-metric-label { font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1.4; } .ds-metric-value { font-family: Inter, system-ui, sans-serif; font-size: 22px; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums; line-height: 1.2; }"
+    },
+    {
+      "name": "Tag / Chip",
+      "kind": "chip",
+      "refersTo": "tag-default",
+      "description": "Inline constraint tokens and selection markers. Selected state uses Instrument Blue. Alert variants use red tinting.",
+      "html": "<span class=\"ds-tag\">AAPL</span><span class=\"ds-tag ds-tag--selected\">MSFT</span><span class=\"ds-tag ds-tag--alert\">ESG Excluded</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 8px; font-family: Inter, system-ui, sans-serif; font-size: 12px; color: #0f172a; } .ds-tag--selected { border-color: #2563eb; background: #eff6ff; color: #2563eb; } .ds-tag--alert { border-color: #fecdd3; background: #fff1f2; color: #dc2626; }"
+    },
+    {
+      "name": "Stress Card (Severe)",
+      "kind": "card",
+      "description": "Historical stress scenario output. Full-surface tinting carries severity — no border-left stripe.",
+      "html": "<div class=\"ds-stress-card ds-stress-card--severe\"><div class=\"ds-stress-header\"><div class=\"ds-stress-label\">2008 Financial Crisis</div><div class=\"ds-stress-date\">2008-09 to 2009-03</div></div><div class=\"ds-stress-return\">-47.2%</div><div class=\"ds-stress-note\">Worst 6-month drawdown in the dataset.</div></div>",
+      "css": ".ds-stress-card { border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; } .ds-stress-card--severe { background: #fff1f2; border-color: #fca5a5; } .ds-stress-card--bad { background: #fff7ed; border-color: #fed7aa; } .ds-stress-card--mild { background: #fffbeb; border-color: #fde68a; } .ds-stress-card--positive { background: #f0fdf4; border-color: #bbf7d0; } .ds-stress-header { display: flex; flex-direction: column; gap: 2px; } .ds-stress-label { font-family: Inter, system-ui, sans-serif; font-weight: 700; font-size: 13px; color: #0f172a; } .ds-stress-date { font-family: monospace; font-size: 11px; color: #64748b; } .ds-stress-return { font-family: Inter, system-ui, sans-serif; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; color: #dc2626; line-height: 1.1; } .ds-stress-note { font-family: Inter, system-ui, sans-serif; font-size: 12px; color: #64748b; font-style: italic; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Analyst's Workbench",
+    "overview": "Folio's visual system is a serious instrument. Like a well-maintained workbench where everything has its place and function, nothing exists for decoration — every visual decision earns its presence by serving the analysis. The interface recedes from the data. The user should feel the rigour of the numbers, not the craft of the UI.\n\nThe aesthetic draws from Linear's discipline: opinionated, unhurried, and immediately purposeful. White space is structured, not generous for its own sake. The palette is cool and near-neutral, with Instrument Blue reserved for interactive elements and primary data signals. Color is either data-meaningful or absent.\n\nFolio explicitly rejects: the speculative energy of crypto dark mode (neon on black, chart-fetishism); the gamified optimism of retail fintech (Robinhood-style green numbers and confetti); the safe anonymity of generic SaaS blue.",
+    "keyCharacteristics": [
+      "Dense, data-forward layouts with deliberate whitespace rhythm",
+      "Restrained palette: cool neutrals + one functional accent (Instrument Blue)",
+      "Monospace for tickers and numeric alignment; Inter for everything else",
+      "Flat surfaces at rest; shadows are structural separators, not expressive",
+      "Every color carries a specific meaning (action, success, warning, danger)",
+      "WCAG AA throughout: color is never the sole carrier of meaning"
+    ],
+    "rules": [
+      { "name": "The Workbench Rule", "body": "Instrument Blue appears on no more than 15% of any given view. Its rarity is what makes it signal. Semantic colors follow the same logic: green and red are data, never emphasis.", "section": "colors" },
+      { "name": "The Monospace Signal Rule", "body": "Ticker symbols and tabular numerics are always rendered in a monospace stack. Never render a ticker in Inter — the distinction between prose and instrument is the point.", "section": "typography" },
+      { "name": "The Flat-at-Rest Rule", "body": "Surfaces are flat at rest. Shadows do not escalate on hover or focus. Hover states use background tint changes; focus states use the Instrument Blue ring. Nested shadows are prohibited.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do render ticker symbols in a monospace stack, always.",
+      "Do pair color with labels, numbers, or icons — color alone must never be the sole signal.",
+      "Do use font-variant-numeric: tabular-nums for any column of numbers requiring decimal alignment.",
+      "Do express severity through full card-surface background tinting.",
+      "Do maintain 4.5:1 contrast for all body text. Test Field Green and Amber Signal on White Surface specifically.",
+      "Do respect prefers-reduced-motion for all CSS transitions.",
+      "Do use Instrument Blue exclusively for interactive, data-meaningful, or selection-state elements."
+    ],
+    "donts": [
+      "Don't introduce neon accents, electric gradients, or dark-mode-on-black surfaces. Folio is not a crypto terminal.",
+      "Don't add celebratory states, confetti, green-number animations, or gamification signals of any kind.",
+      "Don't use border-left greater than 1px as a colored accent stripe on cards, list items, callouts, or alerts.",
+      "Don't use gradient text (background-clip: text with a gradient). Emphasis through weight or size only.",
+      "Don't stack shadows or amplify them on hover. One ambient separator level exists; escalation is prohibited.",
+      "Don't use Instrument Blue as a background fill on anything larger than a button.",
+      "Don't introduce a second non-semantic accent color.",
+      "Don't use pure #000000 or #ffffff. Midnight Slate and White Surface carry a cool tint; preserve it.",
+      "Don't use generic SaaS blue as an expressive choice. Instrument Blue is the one blue allowed, and it earns its place by being functional."
+    ]
+  }
+}
