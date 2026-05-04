@@ -54,7 +54,7 @@ export default function App() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={\`tab-btn \${tab === t.id ? "active" : ""}\`}
+            className={`tab-btn ${tab === t.id ? "active" : ""}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
